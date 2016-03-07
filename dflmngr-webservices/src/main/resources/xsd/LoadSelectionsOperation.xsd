@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.dfl.net/dflMngrWebservices/" xmlns="http://www.dfl.net/dflMngrWebservices/" elementFormDefault="qualified">
+    <xsd:element name="LoadSelectionsRequest" type="LoadSelectionsRequestType"/>
+    <xsd:element name="LoadSelectionsResponse" type="LoadSelectionsResponseType"/>
+    
+    <xsd:complexType name="LoadSelectionsRequestType">
+        <xsd:sequence>
+            <xsd:element name="Team" type="xsd:string"/>
+            <xsd:element name="Round" type="xsd:int"/>
+            <xsd:element name="Ins" type="InsType" minOccurs="0"/>
+            <xsd:element name="Outs" type="OutsType" minOccurs="0"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    
+    <xsd:complexType name="LoadSelectionsResponseType">
+        <xsd:sequence>
+            <xsd:element name="Result" type="xsd:string"/>
+        </xsd:sequence>
+    </xsd:complexType>
+        
+    <xsd:complexType name="InsType">
+        <xsd:sequence>
+            <xsd:element name="In" type="xsd:int" maxOccurs="22"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    
+    <xsd:complexType name="OutsType">
+        <xsd:sequence>
+            <xsd:element name="Out" type="xsd:int" maxOccurs="22"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+</xsd:schema>

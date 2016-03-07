@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+	<persistence-unit name="dflmngr" transaction-type="RESOURCE_LOCAL">
+		<mapping-file>META-INF/orm.xml</mapping-file>
+		<class>net.dflmngr.model.entity.InsAndOuts</class>
+		<class>net.dflmngr.model.entity.AflFixture</class>
+		<class>net.dflmngr.model.entity.Globals</class>
+		<class>net.dflmngr.model.entity.DflRoundInfo</class>
+		<class>net.dflmngr.model.entity.DflRoundEarlyGames</class>
+		<class>net.dflmngr.model.entity.DflRoundMapping</class>
+		<class>net.dflmngr.model.entity.RawPlayerStats</class>
+		<properties>
+			<property name="javax.persistence.jdbc.password" value="dflmngrusr" />
+			<property name="javax.persistence.jdbc.user" value="dflmngrusr" />
+			<property name="javax.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver" />
+			<property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/dflmngrdev" />
+			<property name="javax.persistence.logging.level" value="INFO" />
+		</properties>
+	</persistence-unit>
+</persistence>

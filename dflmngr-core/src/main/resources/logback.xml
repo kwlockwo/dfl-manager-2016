@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xml>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+	<appender name="db" class="ch.qos.logback.classic.db.DBAppender">
+		<connectionSource
+			class="ch.qos.logback.core.db.DriverManagerConnectionSource">
+			<driverClass>org.mariadb.jdbc.Driver</driverClass>
+			<url>jdbc:mysql://localhost:3306/dflmngrdev</url>
+			<user>dflmngrusr</user>
+			<password>dflmngrusr</password>
+		</connectionSource>
+	</appender>
+	
+	<logger name="databaseLogger" level="INFO">
+        <appender-ref ref="db" />
+    </logger>
+    
+    <root level="INFO">
+        <!--  <appender-ref ref="STDOUT" /> -->
+    </root>
+</configuration>
