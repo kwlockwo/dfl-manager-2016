@@ -49,7 +49,7 @@
   </wsdl:binding>
   <wsdl:service name="DflMngrWebservicesEndpoint">
     <wsdl:port binding="tns:DflMngrWebservicesEndpointSoapBinding" name="DflMngrWebservicesPort">
-      <soap:address location="http://localhost:8080/dflmngr/services/webservices"/>
+      <soap:address location="http://${web.host}:${web.port}/dflmngr/services/webservices"/>
     </wsdl:port>
   </wsdl:service>
 </wsdl:definitions>

@@ -18,6 +18,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.model.DomainDecodes;
 import net.dflmngr.model.entity.InsAndOuts;
@@ -29,7 +30,7 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.utils.EmailUtils;
 
 public class InsAndOutsReport {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	private Logger logger;
 	
 	GlobalsService globalsService;
 	InsAndOutsService insAndOutsService;
@@ -37,58 +38,69 @@ public class InsAndOutsReport {
 	String reportType;
 		
 	public InsAndOutsReport() {
+		
+		MDC.put("online.name", "InsAndOutsReport");
+		logger = LoggerFactory.getLogger("online-logger");
+		
 		globalsService = new GlobalsServiceImpl();
 		insAndOutsService = new InsAndOutsServiceImpl();
 	}
 	
-	public void execute(int round, String reportType) throws Exception {
+	public void execute(int round, String reportType) {
 		
-		logger.info("Executing InsAndOutsReport for rounds: {}, report type: {}", round, reportType);
+		try {
+			logger.info("Executing InsAndOutsReport for rounds: {}, report type: {}", round, reportType);
+					
+			List<String> teams = globalsService.getTeamCodes();
+			Map<String, List<Integer>> ins = new  HashMap<>();
+			Map<String, List<Integer>> outs = new  HashMap<>();
+			
+			this.reportType = reportType;
+			
+			logger.info("Team codes: {}", teams);
+			
+			for(String teamCode : teams) {
+				List<Integer> teamIns = new ArrayList<>();
+				List<Integer> teamOuts = new ArrayList<>();
 				
-		List<String> teams = globalsService.getTeamCodes();
-		Map<String, List<Integer>> ins = new  HashMap<>();
-		Map<String, List<Integer>> outs = new  HashMap<>();
-		
-		this.reportType = reportType;
-		
-		logger.info("Team codes: {}", teams);
-		
-		for(String teamCode : teams) {
-			List<Integer> teamIns = new ArrayList<>();
-			List<Integer> teamOuts = new ArrayList<>();
-			
-			List<InsAndOuts> teamInsAndOuts = insAndOutsService.getByTeamAndRound(round, teamCode);
-			
-			for(InsAndOuts inOrOut : teamInsAndOuts) {
-				if(inOrOut.getInOrOut().equals(DomainDecodes.INS_AND_OUTS.IN_OR_OUT.IN)) {
-					teamIns.add(inOrOut.getTeamPlayerId());
-				} else {
-					teamOuts.add(inOrOut.getTeamPlayerId());
+				List<InsAndOuts> teamInsAndOuts = insAndOutsService.getByTeamAndRound(round, teamCode);
+				
+				for(InsAndOuts inOrOut : teamInsAndOuts) {
+					if(inOrOut.getInOrOut().equals(DomainDecodes.INS_AND_OUTS.IN_OR_OUT.IN)) {
+						teamIns.add(inOrOut.getTeamPlayerId());
+					} else {
+						teamOuts.add(inOrOut.getTeamPlayerId());
+					}
 				}
+				
+				logger.info("{} ins: {}", teamCode, teamIns);
+				
+				if(round == 1) {
+					logger.info("{} no outs round 1", teamCode);
+				} else {
+					logger.info("{} outs: {}", teamCode, teamOuts);
+				}
+				
+				ins.put(teamCode, teamIns);
+				outs.put(teamCode, teamOuts);
 			}
+	
+			String report = writeReport(teams, round, ins, outs);
 			
-			logger.info("{} ins: {}", teamCode, teamIns);
-			
-			if(round == 1) {
-				logger.info("{} no outs round 1", teamCode);
+			if(reportType.equals("Full")) {
+				emailReport(report, round, true);
 			} else {
-				logger.info("{} outs: {}", teamCode, teamOuts);
+				emailReport(report, round, false);
 			}
 			
-			ins.put(teamCode, teamIns);
-			outs.put(teamCode, teamOuts);
+			globalsService.close();
+			insAndOutsService.close();
+			
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("online.name");
 		}
-
-		String report = writeReport(teams, round, ins, outs);
-		
-		if(reportType.equals("Full")) {
-			emailReport(report, round, true);
-		} else {
-			emailReport(report, round, false);
-		}
-		
-		globalsService.close();
-		insAndOutsService.close();
 	}
 	
 	private String writeReport(List<String> teams, int round, Map<String, List<Integer>> ins, Map<String, List<Integer>> outs) throws Exception {

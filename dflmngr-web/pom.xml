@@ -1,55 +1,81 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
-  
-  <parent>
-    <groupId>net.dflmngr</groupId>
-    <artifactId>dflmngr</artifactId>
-    <version>1.0-SNAPSHOT</version>
-  </parent>
-  
-  <artifactId>dflmngr-web</artifactId>
-  <name>dflmngr-web</name>
-  <url>http://maven.apache.org</url>
-  
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
-  
-     <build>
-      <plugins>
-         <plugin>
-            <groupId>org.apache.tomcat.maven</groupId>
-            <artifactId>tomcat7-maven-plugin</artifactId>
-         </plugin>
-         <plugin>
-            <artifactId>maven-war-plugin</artifactId>
-            <version>2.4</version>
-            <configuration>
-                <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
-                <webResources>
-                    <resource>
-                        <directory>../dflmngr-webservices/src/main/resources</directory>
-                        <targetPath>WEB-INF/wsdl</targetPath>
-                        <includes>
-                            <include>*.wsdl</include>
-                        </includes>
-                    </resource>
-                </webResources>
-            </configuration>
-         </plugin>
-      </plugins>
-      <!-- Name of the generated WAR file -->
-      <finalName>dflmngr</finalName>
-   </build>
-   
-     <dependencies>
-     	<dependency>
-     		<groupId>net.dflmngr</groupId>
-     		<artifactId>dflmngr-webservices</artifactId>
-     		<version>1.0-SNAPSHOT</version>
-     	</dependency>
-     </dependencies>
-     <packaging>war</packaging>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>net.dflmngr</groupId>
+		<artifactId>dflmngr</artifactId>
+		<version>alpha_0.0.1</version>
+	</parent>
+
+	<artifactId>dflmngr-web</artifactId>
+	<name>dflmngr-web</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>net.dflmngr</groupId>
+			<artifactId>dflmngr-webservices</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+	</dependencies>
+	<packaging>war</packaging>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.tomcat.maven</groupId>
+				<artifactId>tomcat7-maven-plugin</artifactId>
+			</plugin>
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-dependency-plugin</artifactId> 
+				<executions> <execution> <id>unpack-schemas</id> <phase>package</phase> <goals> 
+				<goal>unpack-dependencies</goal> </goals> <configuration> <outputDirectory>${project.build.directory}</outputDirectory> 
+				<includeClassifiers>schemas</includeClassifiers> <includeArtifacIds>dflmngr-webservices</includeArtifacIds> 
+				<includeGroupIds>${project.groupId}</includeGroupIds> <excludeTransitive>true</excludeTransitive> 
+				</configuration> </execution> </executions> </plugin> -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack-schemas</id>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>net.dflmngr</groupId>
+									<artifactId>dflmngr-webservices</artifactId>
+									<version>${project.version}</version>
+									<classifier>schemas</classifier>
+									<type>zip</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/${project.build.finalName}/WEB-INF</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+					<!-- webResources> <resource> <directory>../dflmngr-webservices/src/main/resources</directory> 
+						<targetPath>WEB-INF/wsdl</targetPath> <includes> <include>*.wsdl</include> 
+						</includes> </resource> </webResources> -->
+				</configuration>
+			</plugin>
+		</plugins>
+		<!-- Name of the generated WAR file -->
+		<finalName>dflmngr</finalName>
+	</build>
 </project>

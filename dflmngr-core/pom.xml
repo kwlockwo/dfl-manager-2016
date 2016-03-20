@@ -5,7 +5,7 @@
   <parent>
     <groupId>net.dflmngr</groupId>
     <artifactId>dflmngr</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>alpha_0.0.1</version>
   </parent>
   <artifactId>dflmngr-core</artifactId>
   <name>dflmngr-core</name>
@@ -17,7 +17,7 @@
   	<dependency>
   		<groupId>net.dflmngr</groupId>
   		<artifactId>dflmngr-model</artifactId>
-  		<version>1.0-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   	<dependency>
   		<groupId>org.apache.poi</groupId>
@@ -27,16 +27,25 @@
   	<dependency>
   		<groupId>org.apache.poi</groupId>
   		<artifactId>poi-ooxml</artifactId>
-  		<version>3.14-beta1</version>
+  		<version>3.13</version>
   	</dependency>
   	<dependency>
   		<groupId>net.dflmngr</groupId>
   		<artifactId>dflmngr-base</artifactId>
-  		<version>1.0-SNAPSHOT</version>
+  		<version>${project.version}</version>
   	</dependency>
   </dependencies>
   
     <build>
+        <filters>
+            <filter>${project.build.directory}/filters/${env.filter.file}</filter>
+        </filters>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
 	            <groupId>org.codehaus.mojo</groupId>
@@ -59,6 +68,32 @@
                     </sources>
 	            </configuration>
 	        </plugin>
+	        <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-filters</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>net.dflmngr</groupId>
+                                    <artifactId>dflmngr-base</artifactId>
+                                    <version>${project.version}</version>
+                                    <classifier>filter-properties</classifier>
+                                    <type>zip</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/filters</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

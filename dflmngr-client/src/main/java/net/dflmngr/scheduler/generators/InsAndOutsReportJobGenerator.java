@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import net.dflmngr.model.entity.DflRoundEarlyGames;
 import net.dflmngr.model.entity.DflRoundInfo;
 import net.dflmngr.model.service.DflRoundInfoService;
@@ -20,6 +24,7 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.webservice.CallDflmngrWebservices;
 
 public class InsAndOutsReportJobGenerator {
+	private Logger logger;
 	
 	DflRoundInfoService dflRoundInfoService;
 	GlobalsService globalsService;
@@ -33,24 +38,42 @@ public class InsAndOutsReportJobGenerator {
 	
 	
 	public InsAndOutsReportJobGenerator() {
+		
+		MDC.put("batch.name", "InsAndOutsReportJobGenerator");
+		logger = LoggerFactory.getLogger("batch-logger");
+		
 		dflRoundInfoService = new DflRoundInfoServiceImpl();
 		globalsService = new GlobalsServiceImpl();
 	}
 	
 	
-	public void execute() throws Exception {
+	public void execute() {
 		
-		List<DflRoundInfo> dflRounds = dflRoundInfoService.findAll();
-		
-		for(DflRoundInfo dflRound : dflRounds) {
-			createReportJobEntryForFull(dflRound.getRound(), dflRound.getHardLockoutTime());
+		try {
 			
-			Set<Date> earlyGameDates = new HashSet<>();
-			for(DflRoundEarlyGames earlyGame : dflRound.getEarlyGames()) {
-				earlyGameDates.add(earlyGame.getStartTime());
+			logger.info("Executing InsAndOutsReportJobGenerator ....");
+			
+			List<DflRoundInfo> dflRounds = dflRoundInfoService.findAll();
+			
+			for(DflRoundInfo dflRound : dflRounds) {
+				logger.info("Creating full report job entry for round={}, lockout={}", dflRound.getRound(), dflRound.getHardLockoutTime());
+				createReportJobEntryForFull(dflRound.getRound(), dflRound.getHardLockoutTime());
+				
+				Set<Date> earlyGameDates = new HashSet<>();
+				for(DflRoundEarlyGames earlyGame : dflRound.getEarlyGames()) {
+					logger.info("Adding early games round={}, start time={}", dflRound.getRound(), earlyGame.getStartTime());
+					earlyGameDates.add(earlyGame.getStartTime());
+				}
+				
+				logger.info("Creating partial report job entry for round={}", dflRound.getRound());
+				createReportJobEntryForPartial(dflRound.getRound(), earlyGameDates);
+				
+				logger.info("InsAndOutsReportJobGenerator completed");
 			}
-			
-			createReportJobEntryForPartial(dflRound.getRound(), earlyGameDates);
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("batch.name");
 		}
 	}
 	
@@ -76,8 +99,7 @@ public class InsAndOutsReportJobGenerator {
 		jobParams.put("ROUND", round);
 		jobParams.put("REPORT_TYPE","Full");
 		
-		
-		CallDflmngrWebservices.schedualJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false);
+		CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, "batch");
 	}
 	
 	private void createReportJobEntryForPartial(int round, Set<Date> times) throws Exception {
@@ -90,6 +112,8 @@ public class InsAndOutsReportJobGenerator {
 				runDates.add(timeStr);
 			}
 		}
+		
+		logger.info("Partial report will run at the following times: {}", runDates);
 		
 		String standardLockout = globalsService.getStandardLockoutTime();
 		int standardLockoutHour = Integer.parseInt((standardLockout.split(";"))[1]);
@@ -110,20 +134,14 @@ public class InsAndOutsReportJobGenerator {
 	        
 			Map<String, Object> jobParams = new HashMap<>();
 			jobParams.put("ROUND", round);
-			jobParams.put("REPORT_TYPE","Full");
+			jobParams.put("REPORT_TYPE","Partial");
 			
-			CallDflmngrWebservices.schedualJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false);
+			CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, "batch");
 		}
 	}
 	
 	public static void main(String[] args) {
-		
 		InsAndOutsReportJobGenerator testing = new InsAndOutsReportJobGenerator();
-
-		try {
-			testing.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		testing.execute();
 	}
 }

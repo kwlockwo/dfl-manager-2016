@@ -12,6 +12,7 @@ import javax.xml.ws.handler.MessageContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dfl.dflmngrwebservices.DflMngrWebservices;
 import net.dfl.dflmngrwebservices.LoadSelectionsRequestType;
@@ -23,20 +24,27 @@ import net.dflmngr.handlers.TeamSelectionLoaderHandler;
 import net.dflmngr.scheduler.JobScheduler;
 
 
-@WebService(targetNamespace = "http://www.example.org/contract/DoubleIt", 
+@WebService(targetNamespace = "http://www.dfl.net/services/DflMngrWebservices", 
             portName="DflMngrWebservicesPort",
             serviceName="DflMngrWebservicesEndpoint", 
             endpointInterface="net.dfl.dflmngrwebservices.DflMngrWebservices")
 public class DflMngrWebservicesImpl implements DflMngrWebservices {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	
 
 	@Resource
 	private WebServiceContext context;
 	
 	@Override
-	public LoadSelectionsResponseType loadSelections(LoadSelectionsRequestType parameters) {		
+	public LoadSelectionsResponseType loadSelections(LoadSelectionsRequestType parameters) {
+		
+		MDC.put("online.name", "Webservices");
 		
 		try {
+			Logger logger = LoggerFactory.getLogger("online-logger");
+			
+			logger.info("Load selections request received");
+			logger.info("XML Data: {}", parameters);
+			
 			TeamSelectionLoaderHandler handler = new TeamSelectionLoaderHandler();
 			
 			String teamCode = parameters.getTeam();
@@ -44,9 +52,15 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 			List<Integer> ins = parameters.getIns().getIn();
 			List<Integer> outs = parameters.getOuts().getOut();
 			
+			logger.info("Load selections data: teamCode={}; round={}; ins={}; outs={}", teamCode, round, ins, outs);
+			
 			handler.execute(teamCode, round, ins, outs);
+			
+			logger.info("Load selections request completed");
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			MDC.remove("online.name");
 		}
 		
 		
@@ -55,10 +69,15 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 
 	@Override
 	public ScheduleJobResponseType scheduleJob(ScheduleJobRequestType parameters) {
-				
+		
+		MDC.put("online.name", "Webservices");
+		
 		try {
 			
+			Logger logger = LoggerFactory.getLogger("online-logger");
+			
 			logger.info("Job schedule request received");
+			logger.info("XML Data: {}", parameters);
 			
 			ServletContext servletContext = (ServletContext) context.getMessageContext().get(MessageContext.SERVLET_CONTEXT);
 			
@@ -88,8 +107,12 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 			logger.info("Job details: jobName=" + jobName + "; jobGroup=" + jobGroup + "; jobClass=" + jobClassStr + "; jobParams=" + jobParams + "; cron=" + cronStr + "; isImmediate=" + isImmediate);
 			
 			scheduleJob.schedule(jobName, jobGroup, jobClassStr, jobParams, cronStr, isImmediate, servletContext);
+			
+			logger.info("Job schedule request completed");
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			MDC.remove("online.name");
 		}
 		
 		return null;

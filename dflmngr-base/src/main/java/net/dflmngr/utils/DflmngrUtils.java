@@ -15,17 +15,30 @@ public class DflmngrUtils {
 		
 	}
 	
-	public static final Map<String, Integer> weekDays;
+	public static final Map<String, Integer> weekDaysInt;
 	static
 	{
-	    weekDays = new HashMap<String, Integer>();
-	    weekDays.put("Monday", Calendar.MONDAY);
-	    weekDays.put("Tuesday", Calendar.TUESDAY);
-	    weekDays.put("Wednesday", Calendar.WEDNESDAY);
-	    weekDays.put("Thursday", Calendar.THURSDAY);
-	    weekDays.put("Friday", Calendar.FRIDAY);
-	    weekDays.put("Saturday", Calendar.SATURDAY);
-	    weekDays.put("Sunday", Calendar.SUNDAY);
+	    weekDaysInt = new HashMap<String, Integer>();
+	    weekDaysInt.put("Monday", Calendar.MONDAY);
+	    weekDaysInt.put("Tuesday", Calendar.TUESDAY);
+	    weekDaysInt.put("Wednesday", Calendar.WEDNESDAY);
+	    weekDaysInt.put("Thursday", Calendar.THURSDAY);
+	    weekDaysInt.put("Friday", Calendar.FRIDAY);
+	    weekDaysInt.put("Saturday", Calendar.SATURDAY);
+	    weekDaysInt.put("Sunday", Calendar.SUNDAY);
+	};
+	
+	public static final Map<Integer, String> weekDaysString;
+	static
+	{
+	    weekDaysString = new HashMap<Integer, String>();
+	    weekDaysString.put(Calendar.MONDAY, "Monday");
+	    weekDaysString.put(Calendar.TUESDAY, "Tuesday");
+	    weekDaysString.put(Calendar.WEDNESDAY, "Wednesday");
+	    weekDaysString.put(Calendar.THURSDAY, "Thursday");
+	    weekDaysString.put(Calendar.FRIDAY, "Friday");
+	    weekDaysString.put(Calendar.SATURDAY, "Saturday");
+	    weekDaysString.put(Calendar.SUNDAY, "Sunday");
 	};
 	
 	public static final Map<String, Integer> AMPM;

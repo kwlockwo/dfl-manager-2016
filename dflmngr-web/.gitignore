@@ -30,3 +30,4 @@ local.properties
 # Maven
 log/
 target/
+/.apt_generated/

@@ -29,6 +29,6 @@ public class TestingClient {
 		cronExpression.setTime(timeFormat.format(nowCal.getTime()));
 		cronExpression.setStartDate(dateFormat.format(nowCal.getTime()));
 		
-		CallDflmngrWebservices.schedualJob("InsOutsReport", "Reports", "net.dflmngr.scheduler.jobs.InsAndOutsReportJob", jobParams, cronExpression.getCronExpression(), false);
+		CallDflmngrWebservices.scheduleJob("InsOutsReport", "Reports", "net.dflmngr.scheduler.jobs.InsAndOutsReportJob", jobParams, cronExpression.getCronExpression(), false, "batch");
 	}
 }

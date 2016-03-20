@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>net.dflmngr</groupId>
 	<artifactId>dflmngr</artifactId>
-	<version>1.0-SNAPSHOT</version>
+	<version>alpha_0.0.1</version>
 	<packaging>pom</packaging>
 
 	<name>dflmngr</name>
@@ -22,7 +21,8 @@
 		<module>dflmngr-web</module>
 		<module>dflmngr-client</module>
 		<module>dflmngr-base</module>
-	</modules>
+    <module>dflmngr-deploy</module>
+  </modules>
 
 	<dependencies>
 		<dependency>
@@ -72,9 +72,9 @@
 			<version>1.5.5</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
+			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>1.3.2</version>
+			<version>2.4</version>
 		</dependency>
 	</dependencies>
 
@@ -119,4 +119,22 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+	
+	<profiles>
+	   <profile>
+	       <id>dev</id>
+	       <activation>
+                <activeByDefault>true</activeByDefault>
+           </activation>
+	       <properties>
+	           <env.filter.file>dev.filter.properties</env.filter.file>
+	       </properties>
+	   </profile>
+	   <profile>
+           <id>test</id>
+           <properties>
+               <env.filter.file>test.filter.properties</env.filter.file>
+           </properties>
+       </profile>
+	</profiles>
 </project>

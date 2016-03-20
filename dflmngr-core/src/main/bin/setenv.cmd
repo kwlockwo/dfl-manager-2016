@@ -1,0 +1,9 @@
+@echo off
+set ONLINE_HOME="${offline.home}"
+set BATCH_HOME="${batch.home}"
+set JAVA_HOME="${java.home}"
+set LOG_DIR=%BATCH_HOME%/log
+set LIB_DIR=%BATCH_HOME%/lib
+set APP_JARS=%LIB_DIR%/dflmngr-base-${version}.jar;%LIB_DIR%/dflmngr-model-${version}.jar;%LIB_DIR%/dflmngr-core-${version}.jar
+set CLIENT_APP_JARS=%LIB_DIR%/dflmngr-webservices-${version}-client.jar;%LIB_DIR%/dflmngr-client-${version}.jar;
+set APP_CLASSPATH=%CLIENT_APP_JARS%;%APP_JARS%;%LIB_DIR%/*

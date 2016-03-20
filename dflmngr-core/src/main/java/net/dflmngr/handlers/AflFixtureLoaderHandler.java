@@ -14,6 +14,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.service.AflFixtureService;
@@ -22,7 +23,7 @@ import net.dflmngr.model.service.impl.AflFixtureServiceImpl;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 
 public class AflFixtureLoaderHandler {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	private Logger logger;
 	
 	SimpleDateFormat formatter = new SimpleDateFormat("EEEE, MMMM dd h:mma yyyy");
 	
@@ -30,28 +31,38 @@ public class AflFixtureLoaderHandler {
 	AflFixtureService aflFixtureService;
 	
 	public AflFixtureLoaderHandler() {
+		
+		MDC.put("batch.name", "AflFixtureLoader");
+		logger = LoggerFactory.getLogger("batch-logger");
+		
 		globalsService = new GlobalsServiceImpl();
 		aflFixtureService = new AflFixtureServiceImpl();
 	}
 	
 	public void execute(List<Integer> aflRounds) throws Exception {
 		
-		logger.info("Executing AflFixtureLoader for rounds: {}", aflRounds);
-		
-		List<AflFixture> allGames = new ArrayList<AflFixture>();
-		String currentYear = globalsService.getCurrentYear();
-		
-		logger.info("Current year: {}", currentYear);
-		
-		for(Integer aflRound : aflRounds) {
-			allGames.addAll(getAflRoundFixture(currentYear, aflRound));
+		try {
+			logger.info("Executing AflFixtureLoader for rounds: {}", aflRounds);
+			
+			List<AflFixture> allGames = new ArrayList<AflFixture>();
+			String currentYear = globalsService.getCurrentYear();
+			
+			logger.info("Current year: {}", currentYear);
+			
+			for(Integer aflRound : aflRounds) {
+				allGames.addAll(getAflRoundFixture(currentYear, aflRound));
+			}
+			
+			logger.info("Saveing data to DB");
+			
+			aflFixtureService.insertAll(allGames, false);
+			
+			logger.info("AflFixtureLoader Complete");
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("batch.name");
 		}
-		
-		logger.info("Saveing data to DB");
-		
-		aflFixtureService.insertAll(allGames, false);
-		
-		logger.info("AflFixtureLoader Complete");
 	}
 	
 	private List<AflFixture> getAflRoundFixture(String currentYear, Integer aflRound) throws Exception {

@@ -1,11 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xml>
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n</pattern>
-        </encoder>
-    </appender>
+
+	<timestamp key="bySecond" datePattern="yyyyMMdd'T'HHmmss" />
+
+	<property name="LOG.DIR" value="${app.logdir}" />
+
+	<appender name="BATCH" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<key>batch.name</key>
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="BATCH-${batch.name}" class="ch.qos.logback.core.FileAppender">
+				<file>${LOG.DIR}/${batch.name}-${bySecond}.log</file>
+				<encoder>
+					<pattern>%d %p %t %c [%C{0}] - %m%n</pattern>
+				</encoder>
+			</appender>
+		</sift>
+	</appender>
+
+
+	<appender name="ONLINE" class="ch.qos.logback.classic.sift.SiftingAppender">
+		<discriminator>
+			<key>online.name</key>
+			<defaultValue>unknown</defaultValue>
+		</discriminator>
+		<sift>
+			<appender name="ONLINE-${online.name}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+				<file>${LOG.DIR}/${online.name}.log</file>
+				<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+					<fileNamePattern>${app.logdir}/${online.name}.%d{yyyy-MM-dd}.log</fileNamePattern>
+					<maxHistory>30</maxHistory>
+				</rollingPolicy>
+				<encoder>
+					<pattern>%d %p %t %c [%C{0}] - %m%n</pattern>
+				</encoder>
+			</appender>
+		</sift>
+	</appender>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d %p %t %c - %m%n</pattern>
+		</encoder>
+	</appender>
 
 	<appender name="db" class="ch.qos.logback.classic.db.DBAppender">
 		<connectionSource
@@ -16,12 +56,20 @@
 			<password>dflmngrusr</password>
 		</connectionSource>
 	</appender>
-	
+
 	<logger name="databaseLogger" level="INFO">
-        <appender-ref ref="db" />
+		<appender-ref ref="db" />
+	</logger>
+	
+	<logger name="batch-logger" level="INFO">
+        <appender-ref ref="BATCH" />
     </logger>
     
-    <root level="INFO">
-        <!--  <appender-ref ref="STDOUT" /> -->
-    </root>
+    <logger name="online-logger" level="INFO">
+        <appender-ref ref="ONLINE" />
+    </logger>
+
+	<root level="INFO">
+		<!-- <appender-ref ref="STDOUT" /> -->
+	</root>
 </configuration>

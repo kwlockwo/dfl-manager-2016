@@ -8,6 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.DflRoundInfo;
 import net.dflmngr.model.entity.DflRoundMapping;
@@ -20,6 +24,7 @@ import net.dflmngr.utils.CronExpressionCreator;
 import net.dflmngr.webservice.CallDflmngrWebservices;
 
 public class RawStatsReportJobGenerator {
+	private Logger logger;
 	
 	private static String jobName = "RawStatsReport";
 	private static String jobGroup = "Reports";
@@ -32,29 +37,48 @@ public class RawStatsReportJobGenerator {
 	private static SimpleDateFormat timeFormat = new SimpleDateFormat("hh:mm a");
 	
 	public RawStatsReportJobGenerator() {
+		MDC.put("batch.name", "RawStatsReportJobGenerator");
+		logger = LoggerFactory.getLogger("batch-logger");
+		
 		dflRoundInfoService = new DflRoundInfoServiceImpl();
 		aflFixtureService = new AflFixtureServiceImpl();
 	}
 	
 	public void execute() {
 		
-		List<DflRoundInfo> dflSeason = dflRoundInfoService.findAll();
-		
-		for(DflRoundInfo roundInfo : dflSeason) {
-			List<DflRoundMapping> roundMapping = roundInfo.getRoundMapping();
-			List<AflFixture> dflAflGames = new ArrayList<>();
-			for(DflRoundMapping mapping : roundMapping) {
-				if(mapping.getAflGame() == 0) {
-					dflAflGames.addAll(aflFixtureService.getAflFixturesForRound(mapping.getAflRound()));
-				} else {
-					AflFixturePK aflFixturePK = new AflFixturePK();
-					aflFixturePK.setRound(mapping.getAflRound());
-					aflFixturePK.setGame(mapping.getAflGame());
-					dflAflGames.add(aflFixtureService.get(aflFixturePK));
-				}
-			}
+		try {
 			
-			processFixtures(roundInfo.getRound(), dflAflGames);
+			logger.info("Executing RawStatsReportJobGenerator ....");
+			
+			List<DflRoundInfo> dflSeason = dflRoundInfoService.findAll();
+			
+			for(DflRoundInfo roundInfo : dflSeason) {
+				List<DflRoundMapping> roundMapping = roundInfo.getRoundMapping();
+				
+				List<AflFixture> dflAflGames = new ArrayList<>();
+				for(DflRoundMapping mapping : roundMapping) {
+					logger.info("Finding AFL games for: DFL round={}; AFL round={};", roundInfo.getRound(), mapping.getAflRound());
+					if(mapping.getAflGame() == 0) {
+						logger.info("No AFL game mapping adding all games");
+						dflAflGames.addAll(aflFixtureService.getAflFixturesForRound(mapping.getAflRound()));
+					} else {
+						logger.info("Bye round adding: AFL round={}; game={};", mapping.getAflRound(), mapping.getAflGame());
+						AflFixturePK aflFixturePK = new AflFixturePK();
+						aflFixturePK.setRound(mapping.getAflRound());
+						aflFixturePK.setGame(mapping.getAflGame());
+						dflAflGames.add(aflFixtureService.get(aflFixturePK));
+					}
+				}
+				
+				logger.info("Processing fixtures: DFL round={}; fixtures={}", roundInfo.getRound(), dflAflGames);
+				processFixtures(roundInfo.getRound(), dflAflGames);
+				
+				logger.info("RawStatsReportJobGenerator completed");
+			}
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("batch.name");
 		}
 	}
 	
@@ -69,14 +93,20 @@ public class RawStatsReportJobGenerator {
 		
 		for(AflFixture game : aflGames) {
 			
+			logger.info("AFL Fixture={}", game);
+			
 			startTimeCal = Calendar.getInstance();
 			startTimeCal.setTime(game.getStart());
 			currentGameDay = startTimeCal.get(Calendar.DAY_OF_WEEK);
 			
+			logger.info("Current Game Day={}; Previous Game Day={};", currentGameDay, previousGameDay);
+			
 			if(currentGameDay != previousGameDay) {
 				if(currentGameDay == Calendar.SUNDAY || currentGameDay == Calendar.SATURDAY) {
+					logger.info("Creating weekend run, start time={}", startTimeCal);
 					createWeekendSchedule(dflRound, startTimeCal);
 				} else {
+					logger.info("Creating weekday run, start time={}", startTimeCal);
 					createWeekdaySchedule(dflRound, startTimeCal);
 				}
 				
@@ -85,6 +115,7 @@ public class RawStatsReportJobGenerator {
 			
 		}
 		
+		logger.info("Creating final run, start time={}", startTimeCal);
 		createFinalRunSchedule(dflRound, startTimeCal);
 	}
 	
@@ -116,17 +147,11 @@ public class RawStatsReportJobGenerator {
 		jobParams.put("ROUND", round);
 		jobParams.put("IS_FINAL", isFinal);
 		
-		CallDflmngrWebservices.schedualJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false);	
+		CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, "batch");	
 	}
 	
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) {		
 		RawStatsReportJobGenerator testing = new RawStatsReportJobGenerator();
-
-		try {
-			testing.execute();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		testing.execute();
 	}
 }

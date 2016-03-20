@@ -1,7 +1,6 @@
 package net.dflmngr.handlers;
 
 import java.net.URL;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -11,6 +10,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.DflRoundInfo;
@@ -26,59 +28,100 @@ import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 import net.dflmngr.model.service.impl.RawPlayerStatsServiceImpl;
 
 public class RawPlayerStatsHandler {
+	private Logger logger;
 	
 	DflRoundInfoService dflRoundInfoService;
 	AflFixtureService aflFixtureService;
 	GlobalsService globalsService;
 	RawPlayerStatsService rawPlayerStatsService;
 	
+	boolean isExecutable;
+	
+	String mdcKey;
+	
+	String defaultMdcKey = "batch.name";
+	String defaultLoggerName = "batch-logger";
+	String defaultLogfile = "RawPlayerStatsHandler";
+	
 	public RawPlayerStatsHandler() {
 		dflRoundInfoService = new DflRoundInfoServiceImpl();
 		aflFixtureService = new AflFixtureServiceImpl();
 		globalsService = new GlobalsServiceImpl();
 		rawPlayerStatsService = new RawPlayerStatsServiceImpl();
+		
+		isExecutable = false;
 	}
 	
-	public void execute(int round) throws Exception {
+	public void configureLogging(String mdcKey, String loggerName, String logfile) {
+		this.mdcKey = mdcKey;
+		MDC.put(this.mdcKey, logfile);
+		logger = LoggerFactory.getLogger(loggerName);
+		isExecutable = true;
+	}
+	
+	public void execute(int round) {
 		
-		DflRoundInfo dflRoundInfo = dflRoundInfoService.get(round);
-		
-		List<AflFixture> fixturesToProcess = new ArrayList<>();
-		Set<String> teamsToProcess = new HashSet<>();
-		
-		for(DflRoundMapping roundMapping : dflRoundInfo.getRoundMapping()) {
-			int aflRound = roundMapping.getAflRound();
+		try {
+			if(!isExecutable) {
+				logger.info("Not excutable setting default logging");
+				configureLogging(defaultMdcKey, defaultLoggerName, defaultLogfile);
+			}
 			
-			if(roundMapping.getAflGame() == 0) {
-				List<AflFixture> fixtures = aflFixtureService.getAflFixturesPlayedForRound(aflRound);
-				fixturesToProcess.addAll(fixtures);
-				for(AflFixture fixture : fixtures) {
-					teamsToProcess.add(fixture.getHomeTeam());
-					teamsToProcess.add(fixture.getAwayTeam());
-				}
-			} else {
-				int aflGame = roundMapping.getAflGame();
-				AflFixture fixture = aflFixtureService.getPlayedGame(aflRound, aflGame);
+			logger.info("Downloading player stats for DFL round: ", round);
+			
+			DflRoundInfo dflRoundInfo = dflRoundInfoService.get(round);
+			
+			List<AflFixture> fixturesToProcess = new ArrayList<>();
+			Set<String> teamsToProcess = new HashSet<>();
+			
+			logger.info("Checking for AFL rounds to download");
+			for(DflRoundMapping roundMapping : dflRoundInfo.getRoundMapping()) {
+				int aflRound = roundMapping.getAflRound();
 				
-				if(fixture != null) {
-					if(roundMapping.getAflTeam() == null || roundMapping.getAflTeam().equals("")) {
+				logger.info("DFL round includes AFL round={}", aflRound);
+				if(roundMapping.getAflGame() == 0) {
+					List<AflFixture> fixtures = aflFixtureService.getAflFixturesPlayedForRound(aflRound);
+					fixturesToProcess.addAll(fixtures);
+					for(AflFixture fixture : fixtures) {
 						teamsToProcess.add(fixture.getHomeTeam());
 						teamsToProcess.add(fixture.getAwayTeam());
-					} else {
-						teamsToProcess.add(roundMapping.getAflTeam());
+					}
+				} else {
+					int aflGame = roundMapping.getAflGame();
+					AflFixture fixture = aflFixtureService.getPlayedGame(aflRound, aflGame);
+					
+					if(fixture != null) {
+						if(roundMapping.getAflTeam() == null || roundMapping.getAflTeam().equals("")) {
+							teamsToProcess.add(fixture.getHomeTeam());
+							teamsToProcess.add(fixture.getAwayTeam());
+						} else {
+							teamsToProcess.add(roundMapping.getAflTeam());
+						}
 					}
 				}
 			}
+			
+			logger.info("AFL games to download stats from: {}", fixturesToProcess);
+			logger.info("Team to take stats from: {}", teamsToProcess);
+			
+			List<RawPlayerStats> playerStats = processFixtures(round, fixturesToProcess, teamsToProcess);
+			
+			logger.info("Saving player stats to database");
+			
+			rawPlayerStatsService.replaceAllForRound(round, playerStats);
+			
+			logger.info("Player stats saved");
+			
+			dflRoundInfoService.close();
+			aflFixtureService.close();
+			globalsService.close();
+			rawPlayerStatsService.close();
+			
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove(this.mdcKey);
 		}
-		
-		List<RawPlayerStats> playerStats = processFixtures(round, fixturesToProcess, teamsToProcess);
-		
-		rawPlayerStatsService.replaceAllForRound(round, playerStats);
-		
-		dflRoundInfoService.close();
-		aflFixtureService.close();
-		globalsService.close();
-		rawPlayerStatsService.close();
 	}
 	
 	private List<RawPlayerStats> processFixtures(int round, List<AflFixture> fixturesToProcess, Set<String> teamsToProcess) throws Exception {
@@ -93,7 +136,8 @@ public class RawPlayerStatsHandler {
 			String awayTeam = fixture.getAwayTeam();
 			
 			String fullStatsUrl =  statsUrl + "/" + year + "/" + round + "/" + homeTeam.toLowerCase() + "-v-" + awayTeam.toLowerCase();
-					
+			logger.info("AFL stats URL: {}", fullStatsUrl);
+			
 					
 			//		MessageFormat.format(statsUrl, String.valueOf(year), round, homeTeam, awayTeam);
 			
@@ -117,8 +161,10 @@ public class RawPlayerStatsHandler {
 		
 		if(homeORaway.equals("h")) {
 			teamStatsTable = doc.getElementById("homeTeam-advanced").getElementsByTag("tbody").get(0);
+			logger.info("Found home team stats for: round={}; aflTeam={}; ", round, aflTeam);
 		} else {
 			teamStatsTable = doc.getElementById("awayTeam-advanced").getElementsByTag("tbody").get(0);
+			logger.info("Found away team stats for: round={}; aflTeam={}; ", round, aflTeam);
 		}
 		
 		Elements teamStatsRecs = teamStatsTable.getElementsByTag("tr");
@@ -143,6 +189,9 @@ public class RawPlayerStatsHandler {
 			playerStats.setTackles(Integer.parseInt(stats.get(19).text()));
 			playerStats.setGoals(Integer.parseInt(stats.get(23).text()));
 			playerStats.setBehinds(Integer.parseInt(stats.get(24).text()));
+			
+			logger.info("Player stats: {}", playerStats);
+			
 			teamStats.add(playerStats);
 		}
 		
@@ -151,12 +200,8 @@ public class RawPlayerStatsHandler {
 	
 	// For internal testing
 	public static void main(String[] args) {
-		
-		try {
-			RawPlayerStatsHandler testing = new RawPlayerStatsHandler();
-			testing.execute(1);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		RawPlayerStatsHandler testing = new RawPlayerStatsHandler();
+		testing.configureLogging("batch.name", "batch-logger", "RawPlayerStatsHandlerTesting");
+		testing.execute(1);
 	}
 }

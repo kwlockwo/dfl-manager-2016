@@ -5,7 +5,7 @@
   <parent>
     <groupId>net.dflmngr</groupId>
     <artifactId>dflmngr</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>alpha_0.0.1</version>
   </parent>
   <artifactId>dflmngr-client</artifactId>
   <name>dflmngr-client</name>
@@ -17,7 +17,8 @@
   	<dependency>
   		<groupId>net.dflmngr</groupId>
   		<artifactId>dflmngr-webservices</artifactId>
-  		<version>1.0-SNAPSHOT</version>
+  		<version>${project.version}</version>
+  		<classifier>jaxws</classifier>
   	</dependency>
   	<dependency>
   		<groupId>com.cronutils</groupId>

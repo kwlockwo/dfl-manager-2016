@@ -15,6 +15,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.handlers.RawPlayerStatsHandler;
 import net.dflmngr.model.entity.RawPlayerStats;
@@ -26,7 +27,10 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.utils.EmailUtils;
 
 public class RawStatsReport {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	private Logger logger;
+	String mdcKey = "online.name";
+	String loggerName = "online-logger";
+	String logfile = "RawStatsReport";
 	
 	RawPlayerStatsService rawPlayerStatsService;
 	GlobalsService globalsService;
@@ -35,24 +39,36 @@ public class RawStatsReport {
 
 	
 	public RawStatsReport() {
+		
+		MDC.put(this.mdcKey, this.logfile);
+		logger = LoggerFactory.getLogger(this.loggerName);
+		
 		rawPlayerStatsService = new RawPlayerStatsServiceImpl();
 		globalsService = new GlobalsServiceImpl();
 	}
 	
-	public void execute(int round, boolean isFinal) throws Exception {
+	public void execute(int round, boolean isFinal) {
 		
-		logger.info("Executing RawStatsReport for rounds: {}, is final: {}", round, isFinal);
-		
-		RawPlayerStatsHandler rawPlayerStatsHandler = new RawPlayerStatsHandler();
-		rawPlayerStatsHandler.execute(round);
-		
-		List<RawPlayerStats> playerStats = rawPlayerStatsService.getForRound(round);
-		
-		String reportName = writeReport(round, isFinal, playerStats);
-		
-		emailReport(reportName, round, isFinal);
-		
-		logger.info("RawStatsReport Completed");
+		try {
+			logger.info("Executing RawStatsReport for rounds: {}, is final: {}", round, isFinal);
+			
+			RawPlayerStatsHandler rawPlayerStatsHandler = new RawPlayerStatsHandler();
+			rawPlayerStatsHandler.configureLogging(this.mdcKey, this.loggerName, this.logfile);
+			rawPlayerStatsHandler.execute(round);
+			
+			List<RawPlayerStats> playerStats = rawPlayerStatsService.getForRound(round);
+			
+			String reportName = writeReport(round, isFinal, playerStats);
+			
+			emailReport(reportName, round, isFinal);
+			
+			logger.info("RawStatsReport Completed");
+			
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove(this.mdcKey);
+		}
 	}
 	
 	private String writeReport(int round, boolean isFinal, List<RawPlayerStats> playerStats) throws Exception {

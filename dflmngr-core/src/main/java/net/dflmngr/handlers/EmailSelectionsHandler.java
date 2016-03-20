@@ -25,12 +25,13 @@ import javax.mail.internet.MimeMessage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 
 public class EmailSelectionsHandler {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	private Logger logger;
 
 	private String dflmngrEmailAddr;
 	private String incomingMailHost;
@@ -46,31 +47,46 @@ public class EmailSelectionsHandler {
 	Map <String, Boolean> responses;
 	
 	public EmailSelectionsHandler() {
-		globalsService = new GlobalsServiceImpl();
 		
-		Map<String, String> emailConfig = globalsService.getEmailConfig();
+		MDC.put("online.name", "Selections");
+		logger = LoggerFactory.getLogger("online-logger");
 		
-		this.dflmngrEmailAddr = emailConfig.get("dflmngrEmailAddr");
-		this.incomingMailHost = emailConfig.get("incomingMailHost");
-		this.outgoingMailHost = emailConfig.get("outgoingMailHost");
-		this.outgoingMailPort = emailConfig.get("outgoingMailPort");
-		this.mailUsername = emailConfig.get("mailUsername");
-		this.mailPassword = emailConfig.get("mailPassword");
-		
-		logger.info("Email config: dflmngrEmailAddr={}; incomingMailHost={}; outgoingMailHost={}; outgoingMailHost={}; mailUsername={}; mailPassword={}",
-				     dflmngrEmailAddr, incomingMailHost, outgoingMailHost, outgoingMailPort, mailUsername, mailPassword);
-		
-		configureMail();
+		try {
+			globalsService = new GlobalsServiceImpl();
+			
+			Map<String, String> emailConfig = globalsService.getEmailConfig();
+			
+			this.dflmngrEmailAddr = emailConfig.get("dflmngrEmailAddr");
+			this.incomingMailHost = emailConfig.get("incomingMailHost");
+			this.outgoingMailHost = emailConfig.get("outgoingMailHost");
+			this.outgoingMailPort = emailConfig.get("outgoingMailPort");
+			this.mailUsername = emailConfig.get("mailUsername");
+			this.mailPassword = emailConfig.get("mailPassword");
+			
+			logger.info("Email config: dflmngrEmailAddr={}; incomingMailHost={}; outgoingMailHost={}; outgoingMailHost={}; mailUsername={}; mailPassword={}",
+					     dflmngrEmailAddr, incomingMailHost, outgoingMailHost, outgoingMailPort, mailUsername, mailPassword);
+			
+			configureMail();
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+			MDC.remove("online.name");
+		}
 	}
 	
-	public void execute() throws Exception {
-		this.responses = new HashMap<>();
-		logger.info("Email Selections Handler is executing ....");
-		processSelections();
-		logger.info("Sending responses");
-		sendResponses();
-		
-		globalsService.close();
+	public void execute() {
+		try {
+			this.responses = new HashMap<>();
+			logger.info("Email Selections Handler is executing ....");
+			processSelections();
+			logger.info("Sending responses");
+			sendResponses();
+			
+			globalsService.close();
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("online.name");
+		}
 	}
 	
 	private void configureMail() {

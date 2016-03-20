@@ -21,7 +21,7 @@ xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns
         <param-name>quartz:start-scheduler-on-load</param-name>
         <param-value>true</param-value>
     </context-param>
-
+    
     <listener>
         <listener-class>
             org.quartz.ee.servlet.QuartzInitializerListener
@@ -41,4 +41,12 @@ xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns
     <session-config>
         <session-timeout>60</session-timeout>
     </session-config>
+    
+    <resource-ref>
+        <description>dflmngrDB</description>
+        <res-ref-name>jdbc/dflmngrDB</res-ref-name>
+        <res-type>javax.sql.DataSource</res-type>
+        <res-auth>Container</res-auth>
+    </resource-ref>
+       
 </web-app>

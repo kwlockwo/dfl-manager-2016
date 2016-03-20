@@ -16,37 +16,49 @@ import org.quartz.ee.servlet.QuartzInitializerListener;
 import org.quartz.impl.StdSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import net.dflmngr.utils.DflmngrUtils;
 
 public class JobScheduler {
-	private static final Logger logger = LoggerFactory.getLogger("databaseLogger");
+	private Logger logger;
 	
 	private StdSchedulerFactory factory = null;
-	
+		
 	public void schedule(String jobName, String jobGroup, String jobClassStr, Map<String, Object> jobParams, String cronStr, boolean isImmediate, ServletContext context) throws Exception {
-				
-		String now = DflmngrUtils.getNowStr();
-		String jobNameKey;
-		String jobTriggerKey;
 		
-		logger.info("Schedule job: {}", jobName);
+		MDC.put("online.name", "Scheduler");
 		
-		factory = (StdSchedulerFactory) context.getAttribute(QuartzInitializerListener.QUARTZ_FACTORY_KEY);
-		
-		if(isImmediate) {
-			jobNameKey = jobName + "_immediate_" + now;
-			jobTriggerKey = jobName + "_trigger_immediate_" + now;
-			createAndSchedule(jobNameKey, jobGroup, jobClassStr, jobTriggerKey, jobParams, cronStr, true);
+		try {
+			
+			logger = LoggerFactory.getLogger("online-logger");
+			
+			String now = DflmngrUtils.getNowStr();
+			String jobNameKey;
+			String jobTriggerKey;
+			
+			logger.info("Schedule job: {}", jobName);
+			
+			factory = (StdSchedulerFactory) context.getAttribute(QuartzInitializerListener.QUARTZ_FACTORY_KEY);
+			
+			if(isImmediate) {
+				jobNameKey = jobName + "_immediate_" + now;
+				jobTriggerKey = jobName + "_trigger_immediate_" + now;
+				createAndSchedule(jobNameKey, jobGroup, jobClassStr, jobTriggerKey, jobParams, cronStr, true);
+			}
+			
+			if(cronStr != null && !cronStr.equals("")) {
+				jobNameKey = jobName + "_" + now;
+				jobTriggerKey = jobName + "_trigger_" + now;
+				createAndSchedule(jobNameKey, jobGroup, jobClassStr, jobTriggerKey, jobParams, cronStr, false);
+			}
+			
+			logger.info("Scheduled job: {}", jobName);
+		} catch (Exception ex) {
+			logger.error("Error in ... ", ex);
+		} finally {
+			MDC.remove("online.name");
 		}
-		
-		if(cronStr != null && !cronStr.equals("")) {
-			jobNameKey = jobName + "_" + now;
-			jobTriggerKey = jobName + "_trigger_" + now;
-			createAndSchedule(jobNameKey, jobGroup, jobClassStr, jobTriggerKey, jobParams, cronStr, false);
-		}
-		
-		logger.info("Scheduled job: {}", jobName);
 	}
 	
 	private void createAndSchedule(String jobNameKey, String group, String jobClassStr, String jobTriggerKey, Map<String, Object> jobParams, String cronStr, boolean isImmediate) throws Exception {

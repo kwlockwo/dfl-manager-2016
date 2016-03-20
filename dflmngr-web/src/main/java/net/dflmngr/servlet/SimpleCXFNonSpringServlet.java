@@ -10,13 +10,13 @@ import net.dflmngr.webservice.impl.DflMngrWebservicesImpl;
 
 public class SimpleCXFNonSpringServlet extends CXFNonSpringServlet {
 
-  private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-  @Override
-  public void loadBus(ServletConfig servletConfig) {
-    super.loadBus(servletConfig);
-    Bus bus = getBus();
-    BusFactory.setDefaultBus(bus);
-    Endpoint.publish("/webservices", new DflMngrWebservicesImpl());
-  }
+	@Override
+	public void loadBus(ServletConfig servletConfig) {
+		super.loadBus(servletConfig);
+		Bus bus = getBus();
+		BusFactory.setDefaultBus(bus);
+		Endpoint.publish("/webservices", new DflMngrWebservicesImpl());
+	}
 }
