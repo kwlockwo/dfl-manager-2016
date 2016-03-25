@@ -13,11 +13,10 @@ import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import net.dflmngr.handlers.RawPlayerStatsHandler;
+import net.dflmngr.jndi.JndiProvider;
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.RawPlayerStats;
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.RawPlayerStatsService;
@@ -27,10 +26,17 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.utils.EmailUtils;
 
 public class RawStatsReport {
-	private Logger logger;
-	String mdcKey = "online.name";
-	String loggerName = "online-logger";
-	String logfile = "RawStatsReport";
+	private LoggingUtils loggerUtils;
+	String defaultMdcKey = "online.name";
+	String defaultLoggerName = "online-logger";
+	String defaultLogfile = "RawStatsReport";
+	
+	String mdcKey;
+	String loggerName;
+	String logfile;
+	
+	String emailOverride;
+	boolean isExecutable;
 	
 	RawPlayerStatsService rawPlayerStatsService;
 	GlobalsService globalsService;
@@ -38,19 +44,36 @@ public class RawStatsReport {
 	String[] headers = {"Player", "D", "M", "HO", "FF", "FA", "T", "G"};
 
 	
-	public RawStatsReport() {
-		
-		MDC.put(this.mdcKey, this.logfile);
-		logger = LoggerFactory.getLogger(this.loggerName);
-		
+	public RawStatsReport() {		
 		rawPlayerStatsService = new RawPlayerStatsServiceImpl();
 		globalsService = new GlobalsServiceImpl();
+		
+		emailOverride = "";
+		isExecutable = false;
 	}
 	
-	public void execute(int round, boolean isFinal) {
+	public void configureLogging(String mdcKey, String loggerName, String logfile) {
+		this.mdcKey = mdcKey;
+		this.loggerName = loggerName;
+		this.logfile = logfile;
+		
+		loggerUtils = new LoggingUtils(loggerName, mdcKey, logfile);
+		isExecutable = true;
+	}
+	
+	public void execute(int round, boolean isFinal, String emailOverride) {
 		
 		try {
-			logger.info("Executing RawStatsReport for rounds: {}, is final: {}", round, isFinal);
+			if(!isExecutable) {
+				configureLogging(defaultMdcKey, defaultLoggerName, defaultLogfile);
+				loggerUtils.log("info", "Default logging configured");
+			}
+			
+			loggerUtils.log("info", "Executing RawStatsReport for rounds: {}, is final: {}", round, isFinal);
+			
+			if(emailOverride != null && !emailOverride.equals("")) {
+				this.emailOverride = emailOverride;
+			}
 			
 			RawPlayerStatsHandler rawPlayerStatsHandler = new RawPlayerStatsHandler();
 			rawPlayerStatsHandler.configureLogging(this.mdcKey, this.loggerName, this.logfile);
@@ -60,15 +83,14 @@ public class RawStatsReport {
 			
 			String reportName = writeReport(round, isFinal, playerStats);
 			
+			loggerUtils.log("info", "Sending Report");
 			emailReport(reportName, round, isFinal);
 			
-			logger.info("RawStatsReport Completed");
+			loggerUtils.log("info", "RawStatsReport Completed");
 			
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove(this.mdcKey);
-		}
+			loggerUtils.log("error", "Error in ... ", ex);
+		} 
 	}
 	
 	private String writeReport(int round, boolean isFinal, List<RawPlayerStats> playerStats) throws Exception {
@@ -79,11 +101,11 @@ public class RawStatsReport {
 		} else {
 			reportName = "RawStatsReport_Round_" + round + "_" + DflmngrUtils.getNowStr() + ".xlsx";
 		}
-		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "insAndOutsReport", reportName);
+		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "rawStatsReport", reportName);
 		
-		logger.info("Writing rawStatsReport Report");
-		logger.info("Report name: {}", reportName);
-		logger.info("Report location: {}", reportLocation);
+		loggerUtils.log("info", "Writing rawStatsReport Report");
+		loggerUtils.log("info", "Report name: {}", reportName);
+		loggerUtils.log("info", "Report location: {}", reportLocation);
 		
 		XSSFWorkbook workbook = new XSSFWorkbook();
 		XSSFSheet sheet = workbook.createSheet("Stats");
@@ -101,7 +123,7 @@ public class RawStatsReport {
 	
 	private void writeHeaders(XSSFWorkbook workbook) {
 		
-		logger.info("Writing Header Rows");
+		loggerUtils.log("info", "Writing Header Rows");
 		
 		XSSFSheet sheet = workbook.getSheet("Stats");
 		XSSFRow row = sheet.createRow(0);
@@ -120,7 +142,7 @@ public class RawStatsReport {
 	
 	private void writeStats(XSSFSheet sheet, List<RawPlayerStats> playerStats) {
 		
-		logger.info("Writing report data");
+		loggerUtils.log("info", "Writing report data");
 		
 		for(RawPlayerStats stats : playerStats) {
 			XSSFRow row = sheet.createRow(sheet.getLastRowNum()+1);
@@ -146,7 +168,7 @@ public class RawStatsReport {
 		
 		String dflMngrEmail = globalsService.getEmailConfig().get("dflmngrEmailAddr");
 		String dflGroupEmail = globalsService.getEmailConfig().get("dflgroupEmailAddr");
-		
+				
 		String subject = "";
 		String body = "";
 		
@@ -161,23 +183,44 @@ public class RawStatsReport {
 		}
 		
 		List<String> to = new ArrayList<>();
-		to.add(dflGroupEmail);
+		
+		if(emailOverride != null && !emailOverride.equals("")) {
+			to.add(emailOverride);
+		} else {
+			to.add(dflGroupEmail);
+		}
 		
 		List<String> attachments = new ArrayList<>();
 		attachments.add(reportName);
 		
+		loggerUtils.log("info", "Emailing to={}; reportName={}", to, reportName);
 		EmailUtils.send(to, dflMngrEmail, subject, body, attachments);
 	}
 	
 	public static void main(String[] args) {
 		
 		try {
-			RawStatsReport testing = new RawStatsReport();
-			testing.execute(1, false);
-			testing = new RawStatsReport();
-			testing.execute(1, true);
-		} catch (Exception e) {
-			e.printStackTrace();
+			String email = "";
+			int round = 0;
+			
+			if(args.length > 2 || args.length < 1) {
+				System.out.println("usage: RawStatsReport <round> optional [<email>]");
+			} else {
+				
+				round = Integer.parseInt(args[0]);
+				
+				if(args.length == 2) {
+					email = args[1];
+				}
+				
+				JndiProvider.bind();
+				
+				RawStatsReport rawStatsReport = new RawStatsReport();
+				rawStatsReport.configureLogging("batch.name", "batch-logger", "RawStatsReport");
+				rawStatsReport.execute(round, false, email);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 	

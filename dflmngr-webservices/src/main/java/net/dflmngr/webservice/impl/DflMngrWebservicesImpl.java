@@ -10,10 +10,6 @@ import javax.servlet.ServletContext;
 import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
 import net.dfl.dflmngrwebservices.DflMngrWebservices;
 import net.dfl.dflmngrwebservices.LoadSelectionsRequestType;
 import net.dfl.dflmngrwebservices.LoadSelectionsResponseType;
@@ -21,6 +17,7 @@ import net.dfl.dflmngrwebservices.ParamType;
 import net.dfl.dflmngrwebservices.ScheduleJobRequestType;
 import net.dfl.dflmngrwebservices.ScheduleJobResponseType;
 import net.dflmngr.handlers.TeamSelectionLoaderHandler;
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.scheduler.JobScheduler;
 
 
@@ -37,13 +34,11 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 	@Override
 	public LoadSelectionsResponseType loadSelections(LoadSelectionsRequestType parameters) {
 		
-		MDC.put("online.name", "Webservices");
+		LoggingUtils loggerUtils = new LoggingUtils("online-logger", "online.name", "Webservices");
 		
 		try {
-			Logger logger = LoggerFactory.getLogger("online-logger");
-			
-			logger.info("Load selections request received");
-			logger.info("XML Data: {}", parameters);
+			loggerUtils.log("info", "Load selections request received");
+			loggerUtils.log("info", "XML Data: {}", parameters);
 			
 			TeamSelectionLoaderHandler handler = new TeamSelectionLoaderHandler();
 			
@@ -52,17 +47,14 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 			List<Integer> ins = parameters.getIns().getIn();
 			List<Integer> outs = parameters.getOuts().getOut();
 			
-			logger.info("Load selections data: teamCode={}; round={}; ins={}; outs={}", teamCode, round, ins, outs);
+			loggerUtils.log("info", "Load selections data: teamCode={}; round={}; ins={}; outs={}", teamCode, round, ins, outs);
 			
 			handler.execute(teamCode, round, ins, outs);
 			
-			logger.info("Load selections request completed");
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("info", "Load selections request completed");
+		} catch (Exception ex) {
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
-		
 		
 		return null;
 	}
@@ -70,14 +62,11 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 	@Override
 	public ScheduleJobResponseType scheduleJob(ScheduleJobRequestType parameters) {
 		
-		MDC.put("online.name", "Webservices");
+		LoggingUtils loggerUtils = new LoggingUtils("online-logger", "online.name", "Webservices");
 		
-		try {
-			
-			Logger logger = LoggerFactory.getLogger("online-logger");
-			
-			logger.info("Job schedule request received");
-			logger.info("XML Data: {}", parameters);
+		try {			
+			loggerUtils.log("info", "Job schedule request received");
+			loggerUtils.log("info", "XML Data: {}", parameters);
 			
 			ServletContext servletContext = (ServletContext) context.getMessageContext().get(MessageContext.SERVLET_CONTEXT);
 			
@@ -104,15 +93,13 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 			String cronStr = parameters.getCronString();
 			boolean isImmediate = parameters.isImmediateInd();
 			
-			logger.info("Job details: jobName=" + jobName + "; jobGroup=" + jobGroup + "; jobClass=" + jobClassStr + "; jobParams=" + jobParams + "; cron=" + cronStr + "; isImmediate=" + isImmediate);
+			loggerUtils.log("info", "Job details: jobName=" + jobName + "; jobGroup=" + jobGroup + "; jobClass=" + jobClassStr + "; jobParams=" + jobParams + "; cron=" + cronStr + "; isImmediate=" + isImmediate);
 			
 			scheduleJob.schedule(jobName, jobGroup, jobClassStr, jobParams, cronStr, isImmediate, servletContext);
 			
-			logger.info("Job schedule request completed");
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("info", "Job schedule request completed");
+		} catch (Exception ex) {
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 		
 		return null;

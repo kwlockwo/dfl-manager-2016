@@ -16,10 +16,9 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.jndi.JndiProvider;
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.DomainDecodes;
 import net.dflmngr.model.entity.InsAndOuts;
 import net.dflmngr.model.service.GlobalsService;
@@ -30,26 +29,52 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.utils.EmailUtils;
 
 public class InsAndOutsReport {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
+	String defaultMdcKey = "online.name";
+	String defaultLoggerName = "online-logger";
+	String defaultLogfile = "InsAndOutsReport";
+	
+	String mdcKey;
+	String loggerName;
+	String logfile;
 	
 	GlobalsService globalsService;
 	InsAndOutsService insAndOutsService;
 	
 	String reportType;
+	
+	String emailOverride;
+	boolean isExecutable;
 		
 	public InsAndOutsReport() {
-		
-		MDC.put("online.name", "InsAndOutsReport");
-		logger = LoggerFactory.getLogger("online-logger");
-		
 		globalsService = new GlobalsServiceImpl();
 		insAndOutsService = new InsAndOutsServiceImpl();
+		
+		isExecutable = false;
 	}
 	
-	public void execute(int round, String reportType) {
+	public void configureLogging(String mdcKey, String loggerName, String logfile) {
+		this.mdcKey = mdcKey;
+		this.loggerName = loggerName;
+		this.logfile = logfile;
+		
+		loggerUtils = new LoggingUtils(loggerName, mdcKey, logfile);
+		isExecutable = true;
+	}
+	
+	public void execute(int round, String reportType, String emailOverride) {
 		
 		try {
-			logger.info("Executing InsAndOutsReport for rounds: {}, report type: {}", round, reportType);
+			if(!isExecutable) {
+				configureLogging(defaultMdcKey, defaultLoggerName, defaultLogfile);
+				loggerUtils.log("info", "Default logging configured");
+			}
+			
+			loggerUtils.log("info", "Executing InsAndOutsReport for rounds: {}, report type: {}", round, reportType);
+			
+			if(emailOverride != null && !emailOverride.equals("")) {
+				this.emailOverride = emailOverride;
+			}
 					
 			List<String> teams = globalsService.getTeamCodes();
 			Map<String, List<Integer>> ins = new  HashMap<>();
@@ -57,7 +82,7 @@ public class InsAndOutsReport {
 			
 			this.reportType = reportType;
 			
-			logger.info("Team codes: {}", teams);
+			loggerUtils.log("info", "Team codes: {}", teams);
 			
 			for(String teamCode : teams) {
 				List<Integer> teamIns = new ArrayList<>();
@@ -73,12 +98,12 @@ public class InsAndOutsReport {
 					}
 				}
 				
-				logger.info("{} ins: {}", teamCode, teamIns);
+				loggerUtils.log("info", "{} ins: {}", teamCode, teamIns);
 				
 				if(round == 1) {
-					logger.info("{} no outs round 1", teamCode);
+					loggerUtils.log("info", "{} no outs round 1", teamCode);
 				} else {
-					logger.info("{} outs: {}", teamCode, teamOuts);
+					loggerUtils.log("info", "{} outs: {}", teamCode, teamOuts);
 				}
 				
 				ins.put(teamCode, teamIns);
@@ -88,8 +113,10 @@ public class InsAndOutsReport {
 			String report = writeReport(teams, round, ins, outs);
 			
 			if(reportType.equals("Full")) {
+				loggerUtils.log("info", "Sending Full Report");
 				emailReport(report, round, true);
 			} else {
+				loggerUtils.log("info", "Sending Partial Report");
 				emailReport(report, round, false);
 			}
 			
@@ -97,9 +124,7 @@ public class InsAndOutsReport {
 			insAndOutsService.close();
 			
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
@@ -108,9 +133,9 @@ public class InsAndOutsReport {
 		String reportName = "InsAndOutsReport_" + this.reportType + "_" + DflmngrUtils.getNowStr() + ".xlsx";
 		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "insAndOutsReport", reportName);
 		
-		logger.info("Writing insAndOuts Report");
-		logger.info("Report name: {}", reportName);
-		logger.info("Report location: {}", reportLocation);
+		loggerUtils.log("info", "Writing insAndOuts Report");
+		loggerUtils.log("info", "Report name: {}", reportName);
+		loggerUtils.log("info", "Report location: {}", reportLocation);
 		
 		XSSFWorkbook workbook = new XSSFWorkbook();
 		XSSFSheet sheet = workbook.createSheet("Ins And Outs");
@@ -132,7 +157,7 @@ public class InsAndOutsReport {
 	
 	private void setupReportRows(XSSFSheet sheet, List<String> teams) {
 		
-		logger.info("Initlizing report rows");
+		loggerUtils.log("info", "Initlizing report rows");
 		
 		for(int i = 0; i < 25; i++) {
 			sheet.createRow(i);
@@ -152,7 +177,7 @@ public class InsAndOutsReport {
 		XSSFRow row;
 		XSSFCell cell;
 		
-		logger.info("Writing report data for: {}", selectionType);
+		loggerUtils.log("info", "Writing report data for: {}", selectionType);
 		
 		if(selectionType.equals("Ins")) {
 			row = sheet.getRow(1);
@@ -188,9 +213,12 @@ public class InsAndOutsReport {
 			}
 			
 			for(Integer selection : teamSelections) {
-				row = sheet.getRow(rowIndex++);
-				cell = row.getCell(columnIndex, Row.CREATE_NULL_AS_BLANK);
-				cell.setCellValue(selection);
+					row = sheet.getRow(rowIndex++);
+					if(row == null) {
+						row = sheet.createRow(rowIndex-1);
+					}
+					cell = row.getCell(columnIndex, Row.CREATE_NULL_AS_BLANK);
+					cell.setCellValue(selection);
 			}		
 		}
 	}
@@ -214,11 +242,17 @@ public class InsAndOutsReport {
 		}
 		
 		List<String> to = new ArrayList<>();
-		to.add(dflGroupEmail);
+
+		if(emailOverride != null && !emailOverride.equals("")) {
+			to.add(emailOverride);
+		} else {
+			to.add(dflGroupEmail);
+		}
 		
 		List<String> attachments = new ArrayList<>();
 		attachments.add(reportName);
 		
+		loggerUtils.log("info", "Emailing to={}; reportName={}", to, reportName);
 		EmailUtils.send(to, dflMngrEmail, subject, body, attachments);
 	}
 	
@@ -226,12 +260,31 @@ public class InsAndOutsReport {
 	public static void main(String[] args) {
 		
 		try {
-			InsAndOutsReport testing = new InsAndOutsReport();
-			testing.execute(1, "Full");
-			testing = new InsAndOutsReport();
-			testing.execute(1, "Partial");
-		} catch (Exception e) {
-			e.printStackTrace();
+			String email = "";
+			int round = 0;
+			String reportType = "";
+			
+			if(args.length > 3 || args.length < 2) {
+				System.out.println("usage: RawStatsReport <round> Full|Partial optional [<email>]");
+			} else {
+				
+				round = Integer.parseInt(args[0]);
+				
+				if(args.length == 2) {
+					reportType = args[1];
+				} else if(args.length == 3) {
+					reportType = args[1];
+					email = args[2];
+				}
+				
+				JndiProvider.bind();
+				
+				InsAndOutsReport insAndOutsReport = new InsAndOutsReport();
+				insAndOutsReport.configureLogging("batch.name", "batch-logger", "InsAndOutsReport");
+				insAndOutsReport.execute(round, reportType, email);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 

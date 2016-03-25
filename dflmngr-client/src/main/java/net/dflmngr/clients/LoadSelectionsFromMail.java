@@ -135,7 +135,7 @@ public class LoadSelectionsFromMail {
 			}		
 		}
 		
-		CallDflmngrWebservices.loadSelections(teamCode, round, ins, outs, "batch");
+		CallDflmngrWebservices.loadSelections(teamCode, round, ins, outs, null);
 	}
 	
 	

@@ -12,10 +12,9 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.jndi.JndiProvider;
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.service.AflFixtureService;
 import net.dflmngr.model.service.GlobalsService;
@@ -23,7 +22,7 @@ import net.dflmngr.model.service.impl.AflFixtureServiceImpl;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 
 public class AflFixtureLoaderHandler {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	SimpleDateFormat formatter = new SimpleDateFormat("EEEE, MMMM dd h:mma yyyy");
 	
@@ -32,36 +31,39 @@ public class AflFixtureLoaderHandler {
 	
 	public AflFixtureLoaderHandler() {
 		
-		MDC.put("batch.name", "AflFixtureLoader");
-		logger = LoggerFactory.getLogger("batch-logger");
+		loggerUtils = new LoggingUtils("batch-logger", "batch.name", "AflFixtureLoader");
 		
-		globalsService = new GlobalsServiceImpl();
-		aflFixtureService = new AflFixtureServiceImpl();
+		try {
+			JndiProvider.bind();
+			
+			globalsService = new GlobalsServiceImpl();
+			aflFixtureService = new AflFixtureServiceImpl();
+		} catch (Exception ex) {
+			loggerUtils.log("error", "Error in ... ", ex);
+		}	
 	}
 	
 	public void execute(List<Integer> aflRounds) throws Exception {
 		
 		try {
-			logger.info("Executing AflFixtureLoader for rounds: {}", aflRounds);
+			loggerUtils.log("info", "Executing AflFixtureLoader for rounds: {}", aflRounds);
 			
 			List<AflFixture> allGames = new ArrayList<AflFixture>();
 			String currentYear = globalsService.getCurrentYear();
 			
-			logger.info("Current year: {}", currentYear);
+			loggerUtils.log("info", "Current year: {}", currentYear);
 			
 			for(Integer aflRound : aflRounds) {
 				allGames.addAll(getAflRoundFixture(currentYear, aflRound));
 			}
 			
-			logger.info("Saveing data to DB");
+			loggerUtils.log("info", "Saveing data to DB");
 			
 			aflFixtureService.insertAll(allGames, false);
 			
-			logger.info("AflFixtureLoader Complete");
+			loggerUtils.log("info", "AflFixtureLoader Complete");
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("batch.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
@@ -80,7 +82,7 @@ public class AflFixtureLoaderHandler {
 		List<String> aflFixtureUrlParts = globalsService.getAflFixtureUrl();
 		String aflFixtureUrl = aflFixtureUrlParts.get(0) + aflFixtureUrlParts.get(1) + currentYear + aflFixtureUrlParts.get(2) + paddedRoundNo + aflFixtureUrlParts.get(3);
 		
-		logger.info("AFL fixture URL: {}", aflFixtureUrl);
+		loggerUtils.log("info", "AFL fixture URL: {}", aflFixtureUrl);
 		
 		Document doc = Jsoup.parse(new URL(aflFixtureUrl).openStream(), "UTF-8", aflFixtureUrl);
 		
@@ -134,7 +136,7 @@ public class AflFixtureLoaderHandler {
 						
 						fixture.setTimezone(timezone);
 						
-						logger.info("Scraped fixture data: {}", fixture);
+						loggerUtils.log("info", "Scraped fixture data: {}", fixture);
 												
 						games.add(fixture);
 						gameCount++;

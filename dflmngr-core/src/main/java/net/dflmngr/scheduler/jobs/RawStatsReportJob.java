@@ -4,14 +4,12 @@ import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.reports.RawStatsReport;
 
 public class RawStatsReportJob implements Job {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	public static String ROUND = "ROUND";
 	public static String IS_FINAL = "IS_FINAL";
@@ -19,12 +17,10 @@ public class RawStatsReportJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		
-		MDC.put("online.name", "Scheduler");
+		loggerUtils = new LoggingUtils("online-logger", "online.name", "Scheduler");
 		
 		try {
-			logger = LoggerFactory.getLogger("online-logger");
-		
-			logger.info("RawStatsReportJob starting ...");
+			loggerUtils.log("info", "RawStatsReportJob starting ...");
 			
 			JobDataMap data = context.getJobDetail().getJobDataMap(); 
 			
@@ -33,13 +29,11 @@ public class RawStatsReportJob implements Job {
 			
 			RawStatsReport rawStatsReport = new RawStatsReport();
 		
-			logger.info("Running rawStatsReport: round={}; isFinal={};", round, isFinal);
-			rawStatsReport.execute(round, isFinal);
-			logger.info("RawStatsReportJob completed");
+			loggerUtils.log("info", "Running rawStatsReport: round={}; isFinal={};", round, isFinal);
+			rawStatsReport.execute(round, isFinal, null);
+			loggerUtils.log("info", "RawStatsReportJob completed");
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 }

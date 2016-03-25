@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
+import net.dflmngr.jndi.JndiProvider;
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.DflRoundEarlyGames;
 import net.dflmngr.model.entity.DflRoundInfo;
 import net.dflmngr.model.service.DflRoundInfoService;
@@ -24,7 +22,7 @@ import net.dflmngr.utils.DflmngrUtils;
 import net.dflmngr.webservice.CallDflmngrWebservices;
 
 public class InsAndOutsReportJobGenerator {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	DflRoundInfoService dflRoundInfoService;
 	GlobalsService globalsService;
@@ -39,11 +37,16 @@ public class InsAndOutsReportJobGenerator {
 	
 	public InsAndOutsReportJobGenerator() {
 		
-		MDC.put("batch.name", "InsAndOutsReportJobGenerator");
-		logger = LoggerFactory.getLogger("batch-logger");
+		loggerUtils = new LoggingUtils("batch-logger", "batch.name", "InsAndOutsReportJobGenerator");
 		
-		dflRoundInfoService = new DflRoundInfoServiceImpl();
-		globalsService = new GlobalsServiceImpl();
+		try {
+			JndiProvider.bind();
+			
+			dflRoundInfoService = new DflRoundInfoServiceImpl();
+			globalsService = new GlobalsServiceImpl();
+		} catch (Exception ex) {
+			loggerUtils.log("error", "Error in ... ", ex);
+		}
 	}
 	
 	
@@ -51,29 +54,27 @@ public class InsAndOutsReportJobGenerator {
 		
 		try {
 			
-			logger.info("Executing InsAndOutsReportJobGenerator ....");
+			loggerUtils.log("infp", "Executing InsAndOutsReportJobGenerator ....");
 			
 			List<DflRoundInfo> dflRounds = dflRoundInfoService.findAll();
 			
 			for(DflRoundInfo dflRound : dflRounds) {
-				logger.info("Creating full report job entry for round={}, lockout={}", dflRound.getRound(), dflRound.getHardLockoutTime());
+				loggerUtils.log("info", "Creating full report job entry for round={}, lockout={}", dflRound.getRound(), dflRound.getHardLockoutTime());
 				createReportJobEntryForFull(dflRound.getRound(), dflRound.getHardLockoutTime());
 				
 				Set<Date> earlyGameDates = new HashSet<>();
 				for(DflRoundEarlyGames earlyGame : dflRound.getEarlyGames()) {
-					logger.info("Adding early games round={}, start time={}", dflRound.getRound(), earlyGame.getStartTime());
+					loggerUtils.log("info", "Adding early games round={}, start time={}", dflRound.getRound(), earlyGame.getStartTime());
 					earlyGameDates.add(earlyGame.getStartTime());
 				}
 				
-				logger.info("Creating partial report job entry for round={}", dflRound.getRound());
+				loggerUtils.log("info", "Creating partial report job entry for round={}", dflRound.getRound());
 				createReportJobEntryForPartial(dflRound.getRound(), earlyGameDates);
 				
-				logger.info("InsAndOutsReportJobGenerator completed");
+				loggerUtils.log("info", "InsAndOutsReportJobGenerator completed");
 			}
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("batch.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
@@ -99,7 +100,7 @@ public class InsAndOutsReportJobGenerator {
 		jobParams.put("ROUND", round);
 		jobParams.put("REPORT_TYPE","Full");
 		
-		CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, "batch");
+		CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, loggerUtils);
 	}
 	
 	private void createReportJobEntryForPartial(int round, Set<Date> times) throws Exception {
@@ -113,7 +114,7 @@ public class InsAndOutsReportJobGenerator {
 			}
 		}
 		
-		logger.info("Partial report will run at the following times: {}", runDates);
+		loggerUtils.log("info", "Partial report will run at the following times: {}", runDates);
 		
 		String standardLockout = globalsService.getStandardLockoutTime();
 		int standardLockoutHour = Integer.parseInt((standardLockout.split(";"))[1]);
@@ -136,7 +137,7 @@ public class InsAndOutsReportJobGenerator {
 			jobParams.put("ROUND", round);
 			jobParams.put("REPORT_TYPE","Partial");
 			
-			CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, "batch");
+			CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, jobParams, cronExpression.getCronExpression(), false, loggerUtils);
 		}
 	}
 	

@@ -51,9 +51,9 @@
 		<connectionSource
 			class="ch.qos.logback.core.db.DriverManagerConnectionSource">
 			<driverClass>org.mariadb.jdbc.Driver</driverClass>
-			<url>jdbc:mysql://localhost:3306/dflmngrdev</url>
-			<user>dflmngrusr</user>
-			<password>dflmngrusr</password>
+			<url>${db.url}</url>
+			<user>${db.user}</user>
+			<password>${db.pass}</password>
 		</connectionSource>
 	</appender>
 

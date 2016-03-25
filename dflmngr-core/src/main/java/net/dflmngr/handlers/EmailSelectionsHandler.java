@@ -23,15 +23,15 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
+import net.freeutils.tnef.Attachment;
+import net.freeutils.tnef.TNEFInputStream;
 
 public class EmailSelectionsHandler {
-	private Logger logger;
+	
+	private LoggingUtils loggerUtils;
 
 	private String dflmngrEmailAddr;
 	private String incomingMailHost;
@@ -48,8 +48,7 @@ public class EmailSelectionsHandler {
 	
 	public EmailSelectionsHandler() {
 		
-		MDC.put("online.name", "Selections");
-		logger = LoggerFactory.getLogger("online-logger");
+		loggerUtils = new LoggingUtils("online-logger", "online.name", "Selections");
 		
 		try {
 			globalsService = new GlobalsServiceImpl();
@@ -62,30 +61,31 @@ public class EmailSelectionsHandler {
 			this.outgoingMailPort = emailConfig.get("outgoingMailPort");
 			this.mailUsername = emailConfig.get("mailUsername");
 			this.mailPassword = emailConfig.get("mailPassword");
-			
-			logger.info("Email config: dflmngrEmailAddr={}; incomingMailHost={}; outgoingMailHost={}; outgoingMailHost={}; mailUsername={}; mailPassword={}",
-					     dflmngrEmailAddr, incomingMailHost, outgoingMailHost, outgoingMailPort, mailUsername, mailPassword);
+						
+			loggerUtils.log("info", "Email config: dflmngrEmailAddr={}; incomingMailHost={}; outgoingMailHost={}; outgoingMailHost={}; mailUsername={}; mailPassword={}",
+						dflmngrEmailAddr, incomingMailHost, outgoingMailHost, outgoingMailPort, mailUsername, mailPassword);
 			
 			configureMail();
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
 	public void execute() {
 		try {
 			this.responses = new HashMap<>();
-			logger.info("Email Selections Handler is executing ....");
+
+			loggerUtils.log("info", "Email Selections Handler is executing ....");
+
 			processSelections();
-			logger.info("Sending responses");
+
+			loggerUtils.log("info", "Sending responses");
+			
 			sendResponses();
 			
 			globalsService.close();
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
@@ -114,16 +114,16 @@ public class EmailSelectionsHandler {
 		Store store = this.mailSession.getStore("imaps");
 		store.connect(this.incomingMailHost, this.mailUsername, this.mailPassword);
 		
-		Folder inbox = store.getFolder("Inbox");
+		Folder inbox = store.getFolder("Selections");
 		inbox.open(Folder.READ_WRITE);
 		
 		Message[] messages = inbox.getMessages();
 		
-		logger.info("Opended inbox: messages={}", messages.length);
+		loggerUtils.log("info", "Opended inbox: messages={}", messages.length);
 		
 		for(int i = 0; i < messages.length; i++) {
 			
-			logger.info("Handling message {}", i);
+			loggerUtils.log("info", "Handling message {}", i);
 			
 			int currentSize = this.responses.size();
 			
@@ -143,10 +143,17 @@ public class EmailSelectionsHandler {
 						if (disposition != null && (disposition.equalsIgnoreCase(Part.ATTACHMENT) || disposition.equalsIgnoreCase(Part.INLINE))) {
 							String attachementName = part.getFileName();
 							if(attachementName.equals("selections.txt")) {
-								logger.info("Message from {}, has selection attachment", from);
-								handleSelectionFile(part.getInputStream());
-								this.responses.put(from, true);
-								logger.info("Message from {} ... SUCCESS!", from);
+								loggerUtils.log("info", "Message from {}, has selection attachment", from);
+								String teamCode = handleSelectionFile(part.getInputStream());
+								String key = from + ";" + teamCode;
+								this.responses.put(key, true);
+								loggerUtils.log("info", "Message from {} ... SUCCESS!", from);
+							} else if (attachementName.equalsIgnoreCase("WINMAIL.DAT") || attachementName.equalsIgnoreCase("ATT00001.DAT")) {
+								loggerUtils.log("info", "Message from {}, is a TNEF message", from);
+								String teamCode = handleTNEFMessage(part.getInputStream(), from);
+								String key = from + ";" + teamCode;
+								this.responses.put(key, true);
+								loggerUtils.log("info", "Message from {} ... SUCCESS!", from);
 							}
 						}
 							
@@ -154,21 +161,21 @@ public class EmailSelectionsHandler {
 				}
 				if(this.responses.size() == currentSize) {
 					this.responses.put(from, false);
-					logger.info("Message from {} ... FAILURE!", from);
+					loggerUtils.log("info", "Message from {} ... FAILURE!", from);
 				}
 			} catch (Exception ex) {
-				ex.printStackTrace();
+				loggerUtils.log("error", "Error in ... ", ex);
 				try {
 					String from =  InternetAddress.toString(messages[i].getFrom());
 					this.responses.put(from, false);
-					logger.info("Message from {} ... FAILURE with EXCEPTION!", from);
+					loggerUtils.log("info", "Message from {} ... FAILURE with EXCEPTION!", from);
 				} catch (MessagingException ex2) {
-					ex2.printStackTrace();
+					loggerUtils.log("error", "Error in ... ", ex2);
 				}
 			}
 		}
 		
-		logger.info("Moving messages to Processed folder");
+		loggerUtils.log("info", "Moving messages to Processed folder");
 		Folder processedMessages = store.getFolder("Processed");
 		inbox.copyMessages(messages, processedMessages);
 		
@@ -182,7 +189,30 @@ public class EmailSelectionsHandler {
 		store.close();
 	}
 	
-	private void handleSelectionFile(InputStream inputStream) throws Exception {
+	private String handleTNEFMessage(InputStream inputStream, String from) throws Exception {
+
+		String teamCode = "";
+		
+		TNEFInputStream tnefInputSteam = new TNEFInputStream(inputStream);
+		net.freeutils.tnef.Message message = new net.freeutils.tnef.Message(tnefInputSteam);
+
+		for (Attachment attachment : message.getAttachments()) {
+			if (attachment.getNestedMessage() == null) {
+				String filename = attachment.getFilename();
+
+				if (filename.equals("selections.txt")) {
+					loggerUtils.log("info", "Message from {}, has selection attachment", from);
+					teamCode = handleSelectionFile(attachment.getRawData());
+				}
+			} 
+		}
+		
+		message.close();
+		
+		return teamCode;
+	}
+	
+	private String handleSelectionFile(InputStream inputStream) throws Exception {
 		
 		String line = "";
 		String teamCode = "";
@@ -191,20 +221,20 @@ public class EmailSelectionsHandler {
 		List<Integer> outs = new ArrayList<>();
 		BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 		
-		logger.info("Reading selections file ...");
+		loggerUtils.log("info", "Moving messages to Processed folder");
 		
 		while((line = reader.readLine()) != null) {
 			
 			if(line.equalsIgnoreCase("[team]")) {
 				line = reader.readLine();
 				teamCode = line;
-				logger.info("Selections for team: {}", teamCode);
+				loggerUtils.log("info", "Selections for team: {}", teamCode);
 			}
 			
 			if(line.equalsIgnoreCase("[round]")) {
 				line = reader.readLine();
 				round = Integer.parseInt(line);
-				logger.info("Selections for round: {}", round);
+				loggerUtils.log("info", "Selections for round: {}", round);
 			}
 			
 			if(line.equalsIgnoreCase("[in]")) {
@@ -218,7 +248,7 @@ public class EmailSelectionsHandler {
 						ins.add(Integer.parseInt(line));
 					}
 				}
-				logger.info("Selection in: {}", ins);
+				loggerUtils.log("info", "Selection in: {}", ins);
 			}
 			
 			if(line.equalsIgnoreCase("[out]")) {
@@ -232,36 +262,58 @@ public class EmailSelectionsHandler {
 						outs.add(Integer.parseInt(line));
 					}
 				}
-				logger.info("Selection out: {}", outs);
+				loggerUtils.log("info", "Selection out: {}", outs);
 			}		
 		}
 		
 		TeamSelectionLoaderHandler selectionsLoader = new TeamSelectionLoaderHandler();
 		selectionsLoader.execute(teamCode, round, ins, outs);
+		
+		return teamCode;
 	}
 	
 	private void sendResponses() throws Exception {
 		
 		
 		for (Map.Entry<String, Boolean> response : this.responses.entrySet()) {
-		
+			
+			String key = response.getKey();
+			
+			String to = "";
+			String teamCode = "";
+			
+			if(key.contains(";")) {
+				to = key.split(";")[0];
+				teamCode = key.split(";")[1];
+			} else {
+				to = key;
+			}
+			
 			MimeMessage message = new MimeMessage(this.mailSession);
 			message.setFrom(new InternetAddress(this.dflmngrEmailAddr));
-			message.setRecipient(Message.RecipientType.TO, new InternetAddress(response.getKey()));
+			message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 			
-			logger.info("Creating response message: to={}; from={};", response.getKey(), this.dflmngrEmailAddr);
+			loggerUtils.log("info", "Creating response message: to={}; from={};", to, this.dflmngrEmailAddr);
 			
 			boolean isSuccess = response.getValue();
 			
 			if(isSuccess) {
-				logger.info("Message is for SUCCESS");
+				if(teamCode != null && !teamCode.equals("")) {
+					String teamTo = globalsService.getTeamEmail(teamCode);
+					loggerUtils.log("info", "Team email: {}", teamTo);
+					if(!to.equalsIgnoreCase(teamTo)) {
+						loggerUtils.log("info", "Adding team email");
+						message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(teamTo));
+					}
+				}
+				loggerUtils.log("info", "Message is for SUCCESS");
 				setSuccessMessage(message);
 			} else {
-				logger.info("Message is for FAILURE");
+				loggerUtils.log("info", "Message is for FAILURE");
 				setFailureMessage(message);
 			}
-			
-			logger.info("Sending message");
+						
+			loggerUtils.log("info", "Sending message");
 			Transport.send(message);
 		}
 	}

@@ -6,16 +6,14 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.PersistJobDataAfterExecution;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.reports.InsAndOutsReport;
 
 @PersistJobDataAfterExecution   
 @DisallowConcurrentExecution
 public class InsAndOutsReportJob implements Job {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	public static String ROUND = "ROUND";
 	public static String REPORT_TYPE = "REPORT_TYPE";
@@ -23,12 +21,10 @@ public class InsAndOutsReportJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		
-		MDC.put("online.name", "Scheduler");
+		loggerUtils = new LoggingUtils("online-logger", "online.name", "Scheduler");
 		
 		try {
-			logger = LoggerFactory.getLogger("online-logger");
-		
-			logger.info("InsAndOutsReportJob starting ...");
+			loggerUtils.log("info", "InsAndOutsReportJob starting ...");
 			
 			JobDataMap data = context.getJobDetail().getJobDataMap(); 
 			
@@ -37,13 +33,11 @@ public class InsAndOutsReportJob implements Job {
 			
 			InsAndOutsReport insAndOutsReport = new InsAndOutsReport();
 
-			logger.info("Running insAndOutsReport: round={}; reportType={};", round, reportType);
-			insAndOutsReport.execute(round, reportType);
-			logger.info("InsAndOutsReportJob completed");
+			loggerUtils.log("info", "Running insAndOutsReport: round={}; reportType={};", round, reportType);
+			insAndOutsReport.execute(round, reportType, null);
+			loggerUtils.log("info", "InsAndOutsReportJob completed");
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 }

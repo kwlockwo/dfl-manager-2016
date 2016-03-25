@@ -10,10 +10,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.DflRoundInfo;
 import net.dflmngr.model.entity.DflRoundMapping;
@@ -28,7 +26,7 @@ import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 import net.dflmngr.model.service.impl.RawPlayerStatsServiceImpl;
 
 public class RawPlayerStatsHandler {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	DflRoundInfoService dflRoundInfoService;
 	AflFixtureService aflFixtureService;
@@ -36,9 +34,7 @@ public class RawPlayerStatsHandler {
 	RawPlayerStatsService rawPlayerStatsService;
 	
 	boolean isExecutable;
-	
-	String mdcKey;
-	
+		
 	String defaultMdcKey = "batch.name";
 	String defaultLoggerName = "batch-logger";
 	String defaultLogfile = "RawPlayerStatsHandler";
@@ -53,9 +49,7 @@ public class RawPlayerStatsHandler {
 	}
 	
 	public void configureLogging(String mdcKey, String loggerName, String logfile) {
-		this.mdcKey = mdcKey;
-		MDC.put(this.mdcKey, logfile);
-		logger = LoggerFactory.getLogger(loggerName);
+		loggerUtils = new LoggingUtils(loggerName, mdcKey, logfile);
 		isExecutable = true;
 	}
 	
@@ -63,22 +57,22 @@ public class RawPlayerStatsHandler {
 		
 		try {
 			if(!isExecutable) {
-				logger.info("Not excutable setting default logging");
 				configureLogging(defaultMdcKey, defaultLoggerName, defaultLogfile);
+				loggerUtils.log("info", "Default logging configured");
 			}
 			
-			logger.info("Downloading player stats for DFL round: ", round);
+			loggerUtils.log("info", "Downloading player stats for DFL round: ", round);
 			
 			DflRoundInfo dflRoundInfo = dflRoundInfoService.get(round);
 			
 			List<AflFixture> fixturesToProcess = new ArrayList<>();
 			Set<String> teamsToProcess = new HashSet<>();
 			
-			logger.info("Checking for AFL rounds to download");
+			loggerUtils.log("info", "Checking for AFL rounds to download");
 			for(DflRoundMapping roundMapping : dflRoundInfo.getRoundMapping()) {
 				int aflRound = roundMapping.getAflRound();
 				
-				logger.info("DFL round includes AFL round={}", aflRound);
+				loggerUtils.log("info", "DFL round includes AFL round={}", aflRound);
 				if(roundMapping.getAflGame() == 0) {
 					List<AflFixture> fixtures = aflFixtureService.getAflFixturesPlayedForRound(aflRound);
 					fixturesToProcess.addAll(fixtures);
@@ -101,16 +95,16 @@ public class RawPlayerStatsHandler {
 				}
 			}
 			
-			logger.info("AFL games to download stats from: {}", fixturesToProcess);
-			logger.info("Team to take stats from: {}", teamsToProcess);
+			loggerUtils.log("info", "AFL games to download stats from: {}", fixturesToProcess);
+			loggerUtils.log("info", "Team to take stats from: {}", teamsToProcess);
 			
 			List<RawPlayerStats> playerStats = processFixtures(round, fixturesToProcess, teamsToProcess);
 			
-			logger.info("Saving player stats to database");
+			loggerUtils.log("info", "Saving player stats to database");
 			
 			rawPlayerStatsService.replaceAllForRound(round, playerStats);
 			
-			logger.info("Player stats saved");
+			loggerUtils.log("info", "Player stats saved");
 			
 			dflRoundInfoService.close();
 			aflFixtureService.close();
@@ -118,9 +112,7 @@ public class RawPlayerStatsHandler {
 			rawPlayerStatsService.close();
 			
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove(this.mdcKey);
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
@@ -136,7 +128,7 @@ public class RawPlayerStatsHandler {
 			String awayTeam = fixture.getAwayTeam();
 			
 			String fullStatsUrl =  statsUrl + "/" + year + "/" + round + "/" + homeTeam.toLowerCase() + "-v-" + awayTeam.toLowerCase();
-			logger.info("AFL stats URL: {}", fullStatsUrl);
+			loggerUtils.log("info", "AFL stats URL: {}", fullStatsUrl);
 			
 					
 			//		MessageFormat.format(statsUrl, String.valueOf(year), round, homeTeam, awayTeam);
@@ -161,10 +153,10 @@ public class RawPlayerStatsHandler {
 		
 		if(homeORaway.equals("h")) {
 			teamStatsTable = doc.getElementById("homeTeam-advanced").getElementsByTag("tbody").get(0);
-			logger.info("Found home team stats for: round={}; aflTeam={}; ", round, aflTeam);
+			loggerUtils.log("info", "Found home team stats for: round={}; aflTeam={}; ", round, aflTeam);
 		} else {
 			teamStatsTable = doc.getElementById("awayTeam-advanced").getElementsByTag("tbody").get(0);
-			logger.info("Found away team stats for: round={}; aflTeam={}; ", round, aflTeam);
+			loggerUtils.log("info", "Found away team stats for: round={}; aflTeam={}; ", round, aflTeam);
 		}
 		
 		Elements teamStatsRecs = teamStatsTable.getElementsByTag("tr");
@@ -190,7 +182,7 @@ public class RawPlayerStatsHandler {
 			playerStats.setGoals(Integer.parseInt(stats.get(23).text()));
 			playerStats.setBehinds(Integer.parseInt(stats.get(24).text()));
 			
-			logger.info("Player stats: {}", playerStats);
+			loggerUtils.log("info", "Player stats: {}", playerStats);
 			
 			teamStats.add(playerStats);
 		}

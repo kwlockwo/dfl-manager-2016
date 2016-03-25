@@ -3,25 +3,19 @@ package net.dflmngr.handlers;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.DomainDecodes;
 import net.dflmngr.model.entity.InsAndOuts;
 import net.dflmngr.model.service.InsAndOutsService;
 import net.dflmngr.model.service.impl.InsAndOutsServiceImpl;
 
 public class TeamSelectionLoaderHandler {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	InsAndOutsService insAndOutsService;
 	
-	public TeamSelectionLoaderHandler() throws Exception {
-		
-		MDC.put("online.name", "Selections");
-		logger = LoggerFactory.getLogger("online-logger");
-		
+	public TeamSelectionLoaderHandler() throws Exception {		
+		loggerUtils = new LoggingUtils("online-logger", "online.name", "Selections");
 		insAndOutsService = new InsAndOutsServiceImpl();
 	}
 	
@@ -30,7 +24,7 @@ public class TeamSelectionLoaderHandler {
 		try {
 			List<InsAndOuts> insAndOuts = new ArrayList<>();
 			
-			logger.info("Processing ins and out selections for: teamCode={}; round={}; ins={}; outs={};", teamCode, round, ins, outs);
+			loggerUtils.log("info", "Processing ins and out selections for: teamCode={}; round={}; ins={}; outs={};", teamCode, round, ins, outs);
 			
 			for(Integer i : ins) {
 				InsAndOuts in = new InsAndOuts();
@@ -52,16 +46,14 @@ public class TeamSelectionLoaderHandler {
 				insAndOuts.add(out);
 			}
 			
-			logger.info("Saving ins and outs to database: ", insAndOuts);
+			loggerUtils.log("info", "Saving ins and outs to database: ", insAndOuts);
 			insAndOutsService.saveTeamInsAndOuts(insAndOuts);
-			logger.info("Ins and outs saved");
+			loggerUtils.log("info", "Ins and outs saved");
 			
 			insAndOutsService.close();
 			
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
-		}	
+			loggerUtils.log("error", "Error in ... ", ex);
+		}
 	}
 }

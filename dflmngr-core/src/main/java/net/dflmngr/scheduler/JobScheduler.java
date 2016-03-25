@@ -14,30 +14,25 @@ import org.quartz.Scheduler;
 import org.quartz.Trigger;
 import org.quartz.ee.servlet.QuartzInitializerListener;
 import org.quartz.impl.StdSchedulerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.utils.DflmngrUtils;
 
 public class JobScheduler {
-	private Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	private StdSchedulerFactory factory = null;
 		
 	public void schedule(String jobName, String jobGroup, String jobClassStr, Map<String, Object> jobParams, String cronStr, boolean isImmediate, ServletContext context) throws Exception {
 		
-		MDC.put("online.name", "Scheduler");
+		loggerUtils = new LoggingUtils("online-logger", "online.name", "Scheduler");
 		
-		try {
-			
-			logger = LoggerFactory.getLogger("online-logger");
-			
+		try {			
 			String now = DflmngrUtils.getNowStr();
 			String jobNameKey;
 			String jobTriggerKey;
 			
-			logger.info("Schedule job: {}", jobName);
+			loggerUtils.log("info", "Schedule job: {}", jobName);
 			
 			factory = (StdSchedulerFactory) context.getAttribute(QuartzInitializerListener.QUARTZ_FACTORY_KEY);
 			
@@ -53,17 +48,15 @@ public class JobScheduler {
 				createAndSchedule(jobNameKey, jobGroup, jobClassStr, jobTriggerKey, jobParams, cronStr, false);
 			}
 			
-			logger.info("Scheduled job: {}", jobName);
+			loggerUtils.log("info", "Scheduled job: {}", jobName);
 		} catch (Exception ex) {
-			logger.error("Error in ... ", ex);
-		} finally {
-			MDC.remove("online.name");
+			loggerUtils.log("error", "Error in ... ", ex);
 		}
 	}
 	
 	private void createAndSchedule(String jobNameKey, String group, String jobClassStr, String jobTriggerKey, Map<String, Object> jobParams, String cronStr, boolean isImmediate) throws Exception {
 		
-		logger.info("Final job details: jobNameKey={}; group={}; jobClassStr={}; jobTriggerKey={}; jobParams={}; cronStr={}; isImmediate={};", jobNameKey, group, jobClassStr, jobTriggerKey, jobParams, cronStr, isImmediate);
+		loggerUtils.log("info", "Final job details: jobNameKey={}; group={}; jobClassStr={}; jobTriggerKey={}; jobParams={}; cronStr={}; isImmediate={};", jobNameKey, group, jobClassStr, jobTriggerKey, jobParams, cronStr, isImmediate);
 		
 		Class<? extends Job> jobClass = (Class<? extends Job>) Class.forName(jobClassStr);
 		

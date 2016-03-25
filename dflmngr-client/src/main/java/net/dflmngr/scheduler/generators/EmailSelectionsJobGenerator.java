@@ -1,37 +1,32 @@
 package net.dflmngr.scheduler.generators;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
+import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.webservice.CallDflmngrWebservices;
 
 public class EmailSelectionsJobGenerator {
 	
-	private static Logger logger;
+	private LoggingUtils loggerUtils;
 	
 	private static String jobName = "EmailSelections";
 	private static String jobGroup = "Ongoing";
 	private static String jobClass = "net.dflmngr.scheduler.jobs.EmailSelectionsJob";
 	
 	public EmailSelectionsJobGenerator() {
-		MDC.put("batch.name", "EmailSelectionsJobGenerator");
-		logger = LoggerFactory.getLogger("batch-logger");
-		logger.info("EmailSelectionsJobGenerator Starting ...");
+		loggerUtils = new LoggingUtils("batch-logger", "batch.name", "EmailSelectionsJobGenerator");
+		loggerUtils.log("info", "EmailSelectionsJobGenerator Starting ...");
 	}
 	
 	public void execute() {
 		
-		logger.info("EmailSelectionsJobGenerator Executing ...");
+		loggerUtils.log("info", "EmailSelectionsJobGenerator Executing ...");
 		
 		try {
-			CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, null, "0 0/15 * 1/1 * ? *", false, "batch");
+			CallDflmngrWebservices.scheduleJob(jobName, jobGroup, jobClass, null, "0 0/15 * 1/1 * ? *", false, loggerUtils);
 		} catch (Exception ex) {
-			logger.error("Error in ...", ex);
+			loggerUtils.log("error", "Error in ...", ex);
 		}
 		
-		logger.info("EmailSelectionsJobGenerator Completed");
-		MDC.remove("batch.name");
+		loggerUtils.log("info", "EmailSelectionsJobGenerator Completed");
 	}
 	
 	// For internal testing

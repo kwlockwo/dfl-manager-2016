@@ -22,4 +22,5 @@ public interface GlobalsService extends GenericService<Globals, GlobalsPK> {
 	public Map<String, String> getEmailConfig();
 	public String getAflStatsUrl();
 	public String getEmailerRoot();
+	public String getTeamEmail(String teamCode);
 }

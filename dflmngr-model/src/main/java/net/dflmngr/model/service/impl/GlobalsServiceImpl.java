@@ -235,5 +235,16 @@ public class GlobalsServiceImpl extends GenericServiceImpl<Globals, GlobalsPK>im
 		
 		return emailerRoot;
 	}
+	
+	public String getTeamEmail(String teamCode) {
+		
+		String email = "";
+		String code = teamCode;
+		String groupCode = "teamEmail";
+		
+		email = getValue(code, groupCode);
+		
+		return email;
+	}
 
 }
