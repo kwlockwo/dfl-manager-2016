@@ -121,20 +121,24 @@ public class RawStatsReportJobGenerator {
 	
 	private void createWeekendSchedule(int dflRound, Calendar time) {
 		time.set(Calendar.HOUR_OF_DAY, 19);
+		time.set(Calendar.MINUTE, 0);
 		scheduleJob(dflRound, false, time);
 			
 		time.set(Calendar.HOUR_OF_DAY, 23);
+		time.set(Calendar.MINUTE, 0);
 		scheduleJob(dflRound, false, time);	
 	}
 	
 	private void createWeekdaySchedule(int dflRound, Calendar time) {
 		time.set(Calendar.HOUR_OF_DAY, 23);
+		time.set(Calendar.MINUTE, 0);
 		scheduleJob(dflRound, false, time);	
 	}
 	
 	private void createFinalRunSchedule(int dflRound, Calendar time) {
 		time.set(Calendar.DAY_OF_MONTH, time.get(Calendar.DAY_OF_MONTH)+1);
 		time.set(Calendar.HOUR_OF_DAY, 9);
+		time.set(Calendar.MINUTE, 0);
 		scheduleJob(dflRound, true, time);	
 	}
 	
