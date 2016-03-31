@@ -20,9 +20,12 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import net.dflmngr.jndi.JndiProvider;
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.DomainDecodes;
+import net.dflmngr.model.entity.DflTeam;
 import net.dflmngr.model.entity.InsAndOuts;
+import net.dflmngr.model.service.DflTeamService;
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.InsAndOutsService;
+import net.dflmngr.model.service.impl.DflTeamServiceImpl;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 import net.dflmngr.model.service.impl.InsAndOutsServiceImpl;
 import net.dflmngr.utils.DflmngrUtils;
@@ -40,6 +43,7 @@ public class InsAndOutsReport {
 	
 	GlobalsService globalsService;
 	InsAndOutsService insAndOutsService;
+	DflTeamService dflTeamService;
 	
 	String reportType;
 	
@@ -49,7 +53,7 @@ public class InsAndOutsReport {
 	public InsAndOutsReport() {
 		globalsService = new GlobalsServiceImpl();
 		insAndOutsService = new InsAndOutsServiceImpl();
-		
+		dflTeamService = new DflTeamServiceImpl();
 		isExecutable = false;
 	}
 	
@@ -76,7 +80,8 @@ public class InsAndOutsReport {
 				this.emailOverride = emailOverride;
 			}
 					
-			List<String> teams = globalsService.getTeamCodes();
+			//List<String> teams = globalsService.getTeamCodes();
+			List<DflTeam> teams = dflTeamService.findAll();
 			Map<String, List<Integer>> ins = new  HashMap<>();
 			Map<String, List<Integer>> outs = new  HashMap<>();
 			
@@ -84,11 +89,11 @@ public class InsAndOutsReport {
 			
 			loggerUtils.log("info", "Team codes: {}", teams);
 			
-			for(String teamCode : teams) {
+			for(DflTeam team : teams) {
 				List<Integer> teamIns = new ArrayList<>();
 				List<Integer> teamOuts = new ArrayList<>();
 				
-				List<InsAndOuts> teamInsAndOuts = insAndOutsService.getByTeamAndRound(round, teamCode);
+				List<InsAndOuts> teamInsAndOuts = insAndOutsService.getByTeamAndRound(round, team.getTeamCode());
 				
 				for(InsAndOuts inOrOut : teamInsAndOuts) {
 					if(inOrOut.getInOrOut().equals(DomainDecodes.INS_AND_OUTS.IN_OR_OUT.IN)) {
@@ -98,26 +103,26 @@ public class InsAndOutsReport {
 					}
 				}
 				
-				loggerUtils.log("info", "{} ins: {}", teamCode, teamIns);
+				loggerUtils.log("info", "{} ins: {}", team.getTeamCode(), teamIns);
 				
 				if(round == 1) {
-					loggerUtils.log("info", "{} no outs round 1", teamCode);
+					loggerUtils.log("info", "{} no outs round 1", team.getTeamCode());
 				} else {
-					loggerUtils.log("info", "{} outs: {}", teamCode, teamOuts);
+					loggerUtils.log("info", "{} outs: {}", team.getTeamCode(), teamOuts);
 				}
 				
-				ins.put(teamCode, teamIns);
-				outs.put(teamCode, teamOuts);
+				ins.put(team.getTeamCode(), teamIns);
+				outs.put(team.getTeamCode(), teamOuts);
 			}
 	
 			String report = writeReport(teams, round, ins, outs);
 			
 			if(reportType.equals("Full")) {
 				loggerUtils.log("info", "Sending Full Report");
-				emailReport(report, round, true);
+				emailReport(teams, report, round, true);
 			} else {
 				loggerUtils.log("info", "Sending Partial Report");
-				emailReport(report, round, false);
+				emailReport(teams, report, round, false);
 			}
 			
 			globalsService.close();
@@ -128,7 +133,7 @@ public class InsAndOutsReport {
 		}
 	}
 	
-	private String writeReport(List<String> teams, int round, Map<String, List<Integer>> ins, Map<String, List<Integer>> outs) throws Exception {
+	private String writeReport(List<DflTeam> teams, int round, Map<String, List<Integer>> ins, Map<String, List<Integer>> outs) throws Exception {
 		
 		String reportName = "InsAndOutsReport_" + this.reportType + "_" + DflmngrUtils.getNowStr() + ".xlsx";
 		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "insAndOutsReport", reportName);
@@ -155,7 +160,7 @@ public class InsAndOutsReport {
 		return reportLocation.toString();
 	}
 	
-	private void setupReportRows(XSSFSheet sheet, List<String> teams) {
+	private void setupReportRows(XSSFSheet sheet, List<DflTeam> teams) {
 		
 		loggerUtils.log("info", "Initlizing report rows");
 		
@@ -166,13 +171,13 @@ public class InsAndOutsReport {
 		XSSFRow row = sheet.getRow(0);
 		
 		int columnIndex = 1;
-		for(String team : teams) {
+		for(DflTeam team : teams) {
 			XSSFCell cell = row.createCell(columnIndex++);
-			cell.setCellValue(team);
+			cell.setCellValue(team.getTeamCode());
 		}
 	}
 	
-	private void addSelectionsToReport(XSSFSheet sheet, List<String> teams, Map<String, List<Integer>> selections, String selectionType) {
+	private void addSelectionsToReport(XSSFSheet sheet, List<DflTeam> teams, Map<String, List<Integer>> selections, String selectionType) {
 		
 		XSSFRow row;
 		XSSFCell cell;
@@ -189,7 +194,7 @@ public class InsAndOutsReport {
 			cell.setCellValue("Out");
 		}
 		
-		for(String team : teams) {
+		for(DflTeam team : teams) {
 			
 			row = sheet.getRow(0);
 			Iterator<Cell> cellIterator = row.cellIterator();
@@ -198,14 +203,14 @@ public class InsAndOutsReport {
 			while(cellIterator.hasNext()) {
 				cell = (XSSFCell) cellIterator.next();
 				
-				if(cell.getStringCellValue().equals(team)) {
+				if(cell.getStringCellValue().equals(team.getTeamCode())) {
 					break;
 				}
 				
 				columnIndex++;
 			}
 			
-			List<Integer> teamSelections = selections.get(team);
+			List<Integer> teamSelections = selections.get(team.getTeamCode());
 			
 			int rowIndex = 1;
 			if(selectionType.equals("Outs")) {
@@ -223,10 +228,9 @@ public class InsAndOutsReport {
 		}
 	}
 	
-	private void emailReport(String reportName, int round, boolean isFinal) throws Exception {
+	private void emailReport(List<DflTeam> teams, String reportName, int round, boolean isFinal) throws Exception {
 		
 		String dflMngrEmail = globalsService.getEmailConfig().get("dflmngrEmailAddr");
-		String dflGroupEmail = globalsService.getEmailConfig().get("dflgroupEmailAddr");
 		
 		String subject = "";
 		String body = "";
@@ -246,7 +250,9 @@ public class InsAndOutsReport {
 		if(emailOverride != null && !emailOverride.equals("")) {
 			to.add(emailOverride);
 		} else {
-			to.add(dflGroupEmail);
+			for(DflTeam team : teams) {
+				to.add(team.getCoachEmail());
+			}
 		}
 		
 		List<String> attachments = new ArrayList<>();

@@ -160,6 +160,7 @@ public class AflFixtureLoaderHandler {
 		AflFixtureLoaderHandler testing = new AflFixtureLoaderHandler();
 
 		try {
+						
 			List<Integer> testRounds = new ArrayList<>();
 			
 			for(int i = 1; i < 24; i++) {

@@ -39,6 +39,10 @@ public class RawPlayerStatsHandler {
 	String defaultLoggerName = "batch-logger";
 	String defaultLogfile = "RawPlayerStatsHandler";
 	
+	String mdcKey;
+	String loggerName;
+	String logfile;
+	
 	public RawPlayerStatsHandler() {
 		dflRoundInfoService = new DflRoundInfoServiceImpl();
 		aflFixtureService = new AflFixtureServiceImpl();
@@ -50,6 +54,9 @@ public class RawPlayerStatsHandler {
 	
 	public void configureLogging(String mdcKey, String loggerName, String logfile) {
 		loggerUtils = new LoggingUtils(loggerName, mdcKey, logfile);
+		this.mdcKey = mdcKey;
+		this.loggerName = loggerName;
+		this.logfile = logfile;
 		isExecutable = true;
 	}
 	
@@ -171,6 +178,7 @@ public class RawPlayerStatsHandler {
 			
 			playerStats.setTeam(aflTeam);
 
+			playerStats.setJumperNo(Integer.parseInt(stats.get(1).text()));
 			playerStats.setKicks(Integer.parseInt(stats.get(2).text()));
 			playerStats.setHandballs(Integer.parseInt(stats.get(3).text()));
 			playerStats.setDisposals(Integer.parseInt(stats.get(4).text()));

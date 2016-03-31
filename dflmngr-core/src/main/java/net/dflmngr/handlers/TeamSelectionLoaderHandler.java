@@ -12,16 +12,39 @@ import net.dflmngr.model.service.impl.InsAndOutsServiceImpl;
 public class TeamSelectionLoaderHandler {
 	private LoggingUtils loggerUtils;
 	
+	boolean isExecutable;
+	
+	String defaultMdcKey = "batch.name";
+	String defaultLoggerName = "batch-logger";
+	String defaultLogfile = "Selections";
+	
+	String mdcKey;
+	String loggerName;
+	String logfile;
+	
 	InsAndOutsService insAndOutsService;
 	
 	public TeamSelectionLoaderHandler() throws Exception {		
-		loggerUtils = new LoggingUtils("online-logger", "online.name", "Selections");
 		insAndOutsService = new InsAndOutsServiceImpl();
+		isExecutable = false;
+	}
+	
+	public void configureLogging(String mdcKey, String loggerName, String logfile) {
+		loggerUtils = new LoggingUtils(loggerName, mdcKey, logfile);
+		this.mdcKey = mdcKey;
+		this.loggerName = loggerName;
+		this.logfile = logfile;
+		isExecutable = true;
 	}
 	
 	public void execute(String teamCode, int round, List<Integer> ins, List<Integer> outs) {
 		
 		try {
+			if(!isExecutable) {
+				configureLogging(defaultMdcKey, defaultLoggerName, defaultLogfile);
+				loggerUtils.log("info", "Default logging configured");
+			}
+			
 			List<InsAndOuts> insAndOuts = new ArrayList<>();
 			
 			loggerUtils.log("info", "Processing ins and out selections for: teamCode={}; round={}; ins={}; outs={};", teamCode, round, ins, outs);

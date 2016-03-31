@@ -53,10 +53,10 @@ public class EmailUtils {
 
 			for(String attachment : attachments) {
 				messageBodyPart = new MimeBodyPart();
-
+				
 				DataSource source = new FileDataSource(attachment);
 				messageBodyPart.setDataHandler(new DataHandler(source));
-				messageBodyPart.setFileName(attachment);
+				messageBodyPart.setFileName(source.getName());
 				multipart.addBodyPart(messageBodyPart);
 			}
 			

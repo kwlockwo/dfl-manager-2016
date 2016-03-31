@@ -18,6 +18,15 @@
 		<class>net.dflmngr.model.entity.DflRoundEarlyGames</class>
 		<class>net.dflmngr.model.entity.DflRoundMapping</class>
 		<class>net.dflmngr.model.entity.RawPlayerStats</class>
+		<class>net.dflmngr.model.entity.AflPlayer</class>
+		<class>net.dflmngr.model.entity.AflTeam</class>
+		<class>net.dflmngr.model.entity.DflPlayer</class>
+		<class>net.dflmngr.model.entity.DflSelectedPlayer</class>
+		<class>net.dflmngr.model.entity.DflTeam</class>
+		<class>net.dflmngr.model.entity.DflTeamPlayer</class>
+		<class>net.dflmngr.model.entity.DflFixture</class>
+		<class>net.dflmngr.model.entity.DflPlayerScores</class>
+		<class>net.dflmngr.model.entity.DflTeamScores</class>
 
 		<properties>
 			<!-- <property name="javax.persistence.jdbc.password" value="${db.user}" />

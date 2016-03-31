@@ -1,6 +1,8 @@
 package net.dflmngr.model.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.dflmngr.model.dao.RawPlayerStatsDao;
 import net.dflmngr.model.dao.impl.RawPlayerStatsDaoImpl;
@@ -20,6 +22,19 @@ public class RawPlayerStatsServiceImpl extends GenericServiceImpl<RawPlayerStats
 	public List<RawPlayerStats> getForRound(int round) {
 		List<RawPlayerStats> playerStats = dao.findForRound(round);
 		return playerStats;
+	}
+	
+	public Map<String, RawPlayerStats> getForRoundWithKey(int round) {
+		Map<String, RawPlayerStats> playerStatsWithKey = new HashMap<>();
+		
+		List<RawPlayerStats> playerStats = dao.findForRound(round);
+		
+		for(RawPlayerStats stats : playerStats) {
+			String key = stats.getTeam() + stats.getJumperNo();
+			playerStatsWithKey.put(key, stats);
+		}
+		
+		return playerStatsWithKey;
 	}
 	
 	public void replaceAllForRound(int round, List<RawPlayerStats> playerStats) {

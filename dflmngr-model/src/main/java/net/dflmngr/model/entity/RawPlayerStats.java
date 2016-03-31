@@ -24,6 +24,9 @@ public class RawPlayerStats implements Serializable {
 	@Id
 	String team;
 	
+	@Column(name="jumper_no")
+	private int jumperNo;
+	
 	private int kicks;
 	private int handballs;
 	private int disposals;
@@ -57,6 +60,12 @@ public class RawPlayerStats implements Serializable {
 	}
 	public void setTeam(String team) {
 		this.team = team;
+	}
+	public int getJumperNo() {
+		return jumperNo;
+	}
+	public void setJumperNo(int jumperNo) {
+		this.jumperNo = jumperNo;
 	}
 	public int getKicks() {
 		return kicks;
@@ -121,10 +130,10 @@ public class RawPlayerStats implements Serializable {
 	
 	@Override
 	public String toString() {
-		return "RawPlayerStats [round=" + round + ", name=" + name + ", team=" + team + ", kicks=" + kicks
-				+ ", handballs=" + handballs + ", disposals=" + disposals + ", marks=" + marks + ", hitouts=" + hitouts
-				+ ", freesFor=" + freesFor + ", freesAgainst=" + freesAgainst + ", tackles=" + tackles + ", goals="
-				+ goals + ", behinds=" + behinds + "]";
+		return "RawPlayerStats [round=" + round + ", name=" + name + ", team=" + team + ", jumperNo=" + jumperNo
+				+ ", kicks=" + kicks + ", handballs=" + handballs + ", disposals=" + disposals + ", marks=" + marks
+				+ ", hitouts=" + hitouts + ", freesFor=" + freesFor + ", freesAgainst=" + freesAgainst + ", tackles="
+				+ tackles + ", goals=" + goals + ", behinds=" + behinds + "]";
 	}
 	
 	@Override
@@ -138,6 +147,7 @@ public class RawPlayerStats implements Serializable {
 		result = prime * result + goals;
 		result = prime * result + handballs;
 		result = prime * result + hitouts;
+		result = prime * result + jumperNo;
 		result = prime * result + kicks;
 		result = prime * result + marks;
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
@@ -169,6 +179,8 @@ public class RawPlayerStats implements Serializable {
 		if (handballs != other.handballs)
 			return false;
 		if (hitouts != other.hitouts)
+			return false;
+		if (jumperNo != other.jumperNo)
 			return false;
 		if (kicks != other.kicks)
 			return false;

@@ -9,7 +9,7 @@ import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.AflFixture_;
 import net.dflmngr.model.entity.keys.AflFixturePK;
 
-public class AflFixtureDaoImpl extends GenericDaoImpl<AflFixture, AflFixturePK>implements AflFixtureDao {
+public class AflFixtureDaoImpl extends GenericDaoImpl<AflFixture, AflFixturePK> implements AflFixtureDao {
 	
 	public List<AflFixture> findAflFixturesForRound(int round) {
 		

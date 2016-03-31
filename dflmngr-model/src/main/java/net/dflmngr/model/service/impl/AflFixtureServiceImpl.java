@@ -13,7 +13,7 @@ import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.keys.AflFixturePK;
 import net.dflmngr.model.service.AflFixtureService;
 
-public class AflFixtureServiceImpl extends GenericServiceImpl<AflFixture, AflFixturePK>implements AflFixtureService {
+public class AflFixtureServiceImpl extends GenericServiceImpl<AflFixture, AflFixturePK> implements AflFixtureService {
 
 	private AflFixtureDao dao;
 	

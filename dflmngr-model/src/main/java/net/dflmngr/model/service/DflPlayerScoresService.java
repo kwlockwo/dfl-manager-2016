@@ -1,0 +1,13 @@
+package net.dflmngr.model.service;
+
+import java.util.List;
+import java.util.Map;
+
+import net.dflmngr.model.entity.DflPlayerScores;
+import net.dflmngr.model.entity.keys.DflPlayerScoresPK;
+
+public interface DflPlayerScoresService extends GenericService<DflPlayerScores, DflPlayerScoresPK> {
+	public List<DflPlayerScores> getForRound(int round);
+	public Map<Integer, DflPlayerScores> getForRoundWithKey(int round);
+	public void replaceAllForRound(int round, List<DflPlayerScores> playerScores);
+}
