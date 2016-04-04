@@ -246,5 +246,16 @@ public class GlobalsServiceImpl extends GenericServiceImpl<Globals, GlobalsPK>im
 		
 		return email;
 	}
+	
+	public String getCurrentRound() {
+		
+		String currentRound = "";
+		String code = "currentRound";
+		String groupCode = "dflRef";
+		
+		currentRound = getValue(code, groupCode);
+		
+		return currentRound;
+	}
 
 }

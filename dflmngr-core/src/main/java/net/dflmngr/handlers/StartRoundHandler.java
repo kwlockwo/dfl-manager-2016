@@ -110,10 +110,10 @@ public class StartRoundHandler {
 				}
 			} else {
 				List<DflSelectedPlayer> prevSelectedTeam = dflSelectedTeamService.getSelectedTeamForRound(round-1, team.getTeamCode());
-				loggerUtils.log("info", "Not round 1: previous team: {}", selectedTeam);
+				loggerUtils.log("info", "Not round 1: previous team: {}", prevSelectedTeam);
 				
 				for(InsAndOuts inOrOut : insAndOuts) {
-					if(inOrOut.equals(DomainDecodes.INS_AND_OUTS.IN_OR_OUT.IN)) {
+					if(inOrOut.getInOrOut().equals(DomainDecodes.INS_AND_OUTS.IN_OR_OUT.IN)) {
 						DflTeamPlayer teamPlayer = dflTeamPlayerService.getTeamPlayerForTeam(team.getTeamCode(), inOrOut.getTeamPlayerId());
 						
 						DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
@@ -126,7 +126,7 @@ public class StartRoundHandler {
 						prevSelectedTeam.add(selectedPlayer);
 					} else {
 						DflSelectedPlayer droppedPlayer = null;
-						for(DflSelectedPlayer selectedPlayer : selectedTeam) {
+						for(DflSelectedPlayer selectedPlayer : prevSelectedTeam) {
 							if(inOrOut.getTeamPlayerId() == selectedPlayer.getTeamPlayerId()) {
 								droppedPlayer = selectedPlayer;
 								loggerUtils.log("info", "Dropping player from selected team: player={}", droppedPlayer);
@@ -137,10 +137,13 @@ public class StartRoundHandler {
 					}
 				}
 				
-				for(DflSelectedPlayer selectedPlayer : prevSelectedTeam) {
-					if(selectedPlayer.getRound() != round) {
-						selectedPlayer.setRound(round);
-					}
+				for(DflSelectedPlayer prevSelectedPlayer : prevSelectedTeam) {
+					DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
+					selectedPlayer.setPlayerId(prevSelectedPlayer.getPlayerId());
+					selectedPlayer.setRound(round);
+					selectedPlayer.setTeamCode(team.getTeamCode());
+					selectedPlayer.setTeamPlayerId(prevSelectedPlayer.getTeamPlayerId());
+					
 					selectedTeam.add(selectedPlayer);
 				}
 			}

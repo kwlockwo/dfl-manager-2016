@@ -17,6 +17,8 @@ public class ResultsHandler {
 	String loggerName;
 	String logfile;
 	
+	String emailOverride;
+	
 	public ResultsHandler() {}
 	
 	public void configureLogging(String mdcKey, String loggerName, String logfile) {
@@ -25,9 +27,10 @@ public class ResultsHandler {
 		this.loggerName = loggerName;
 		this.logfile = logfile;
 		isExecutable = true;
+		emailOverride = null;
 	}
 	
-	public void execute(int round, boolean isFinal, String emailOveride) {
+	public void execute(int round, boolean isFinal, String emailOverride) {
 		
 		try{
 			if(!isExecutable) {
@@ -35,7 +38,12 @@ public class ResultsHandler {
 				loggerUtils.log("info", "Default logging configured");
 			}
 			
-			loggerUtils.log("info", "RoundProgres excuting, rount={} ....", round);
+			loggerUtils.log("info", "ResultsHandler excuting, rount={} ....", round);
+			
+			if(emailOverride != null && !emailOverride.equals("")) {
+				loggerUtils.log("info", "Overriding email with: {}", emailOverride);
+				this.emailOverride = emailOverride;
+			}
 			
 			loggerUtils.log("info", "Getting stats");
 			RawPlayerStatsHandler statsHandler = new RawPlayerStatsHandler();
@@ -50,9 +58,9 @@ public class ResultsHandler {
 			loggerUtils.log("info", "Writing report");
 			ResultsReport resultsReport = new ResultsReport();
 			resultsReport.configureLogging(mdcKey, loggerName, logfile);
-			resultsReport.execute(round, isFinal, null);
+			resultsReport.execute(round, isFinal, emailOverride);
 			
-			loggerUtils.log("info", "RoundProgres complete");
+			loggerUtils.log("info", "ResultsHandler complete");
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);
 		}
@@ -92,7 +100,7 @@ public class ResultsHandler {
 				JndiProvider.bind();
 				
 				ResultsHandler resultsHandler = new ResultsHandler();
-				resultsHandler.configureLogging("batch.name", "batch-logger", "ResultsHandler");
+				resultsHandler.configureLogging("batch.name", "batch-logger", ("ResultsHandler_R" + round));
 				resultsHandler.execute(round, isFinal, email);
 			}
 		} catch (Exception ex) {

@@ -6,6 +6,8 @@ import java.util.Map;
 public class SelectedTeamValidation {
 	
 	public boolean selectionFileMissing;
+	public boolean lockedOut;
+	public boolean roundCompleted;
 	
 	public boolean ffCheckOk;
 	public boolean fwdCheckOk;
@@ -28,6 +30,8 @@ public class SelectedTeamValidation {
 	
 	public SelectedTeamValidation() {
 		selectionFileMissing = true;
+		lockedOut = true;
+		roundCompleted = true;
 		
 		ffCheckOk = false;
 		fwdCheckOk = false;
@@ -46,7 +50,7 @@ public class SelectedTeamValidation {
 		
 		boolean valid = false;
 		
-		if(!selectionFileMissing && ffCheckOk && fwdCheckOk && rckCheckOk && midCheckOk && fbCheckOk && defCheckOk && benchCheckOk && teamPlayerCheckOk && !unknownError) {
+		if(!selectionFileMissing && ffCheckOk && fwdCheckOk && rckCheckOk && midCheckOk && fbCheckOk && defCheckOk && benchCheckOk && teamPlayerCheckOk && !unknownError && !lockedOut && !roundCompleted) {
 			valid = true;
 		}
 		

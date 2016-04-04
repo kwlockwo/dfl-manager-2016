@@ -23,4 +23,5 @@ public interface GlobalsService extends GenericService<Globals, GlobalsPK> {
 	public String getAflStatsUrl();
 	public String getEmailerRoot();
 	public String getTeamEmail(String teamCode);
+	public String getCurrentRound();
 }

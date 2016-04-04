@@ -92,7 +92,7 @@ public class AflFixtureServiceImpl extends GenericServiceImpl<AflFixture, AflFix
 		startCal.setTime(fixture.getStart());
 		startCal.add(Calendar.HOUR_OF_DAY, 3);
 		
-		if(startCal.after(nowCal)) {
+		if(nowCal.after(startCal)) {
 			playedFixture = fixture;
 		}
 		

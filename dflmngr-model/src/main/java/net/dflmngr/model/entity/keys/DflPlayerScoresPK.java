@@ -1,6 +1,9 @@
 package net.dflmngr.model.entity.keys;
 
-public class DflPlayerScoresPK {
+import java.io.Serializable;
+
+public class DflPlayerScoresPK implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	private int playerId;
 	private int round;

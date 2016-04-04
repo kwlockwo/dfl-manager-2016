@@ -1,19 +1,25 @@
 package net.dflmngr.handlers;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.DflPlayer;
+import net.dflmngr.model.entity.DflRoundInfo;
 import net.dflmngr.model.entity.DflSelectedPlayer;
 import net.dflmngr.model.entity.DflTeamPlayer;
 import net.dflmngr.model.service.DflPlayerService;
+import net.dflmngr.model.service.DflRoundInfoService;
 import net.dflmngr.model.service.DflSelectedTeamService;
 import net.dflmngr.model.service.DflTeamPlayerService;
+import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.impl.DflPlayerServiceImpl;
+import net.dflmngr.model.service.impl.DflRoundInfoServiceImpl;
 import net.dflmngr.model.service.impl.DflSelectedTeamServiceImpl;
 import net.dflmngr.model.service.impl.DflTeamPlayerServiceImpl;
+import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 import net.dflmngr.validation.SelectedTeamValidation;
 
 public class SelectedTeamValidationHandler {
@@ -28,12 +34,15 @@ public class SelectedTeamValidationHandler {
 	private DflSelectedTeamService dflSelectedTeamService;
 	private DflTeamPlayerService dflTeamPlayerService;
 	private DflPlayerService dflPlayerService;
+	private GlobalsService globalsService;
+	private DflRoundInfoService dflRoundInfoService;
 			
 	public SelectedTeamValidationHandler() {		
 		dflSelectedTeamService = new DflSelectedTeamServiceImpl();
 		dflTeamPlayerService = new DflTeamPlayerServiceImpl();
 		dflPlayerService = new DflPlayerServiceImpl();
-		
+		globalsService = new GlobalsServiceImpl();
+		dflRoundInfoService = new DflRoundInfoServiceImpl();
 		isExecutable = false;
 	}
 	
@@ -42,7 +51,7 @@ public class SelectedTeamValidationHandler {
 		isExecutable = true;
 	}
 	
-	public SelectedTeamValidation execute(int round, String teamCode, Map<String, List<Integer>> insAndOuts) {
+	public SelectedTeamValidation execute(int round, String teamCode, Map<String, List<Integer>> insAndOuts, Date receivedDate) {
 		
 		SelectedTeamValidation validationResult = null;
 		
@@ -52,67 +61,85 @@ public class SelectedTeamValidationHandler {
 				loggerUtils.log("info", "Default logging configured");
 			}
 			
-			List<DflSelectedPlayer> selectedTeam;
+			int currentRound = Integer.parseInt(globalsService.getCurrentRound());
+			DflRoundInfo roundInfo = dflRoundInfoService.get(round);
+			Date lockoutTime = roundInfo.getHardLockoutTime();
 			
-			if(round == 1) {
-				List<Integer> ins = insAndOuts.get("in");
-				
-				selectedTeam = new ArrayList<>();
-				
-				for(int in : ins) {
-					if(in < 1 || in > 45) {
-						validationResult = new SelectedTeamValidation();
-						validationResult.selectionFileMissing = false;
-						break;
-					} else {
-						DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
-						
-						selectedPlayer.setRound(round);
-						selectedPlayer.setTeamCode(teamCode);
-						selectedPlayer.setTeamPlayerId(in);
-						
-						selectedTeam.add(selectedPlayer);
-					}
-				}
+			List<DflSelectedPlayer> selectedTeam = null;
+			
+			if(round < currentRound) {
+				validationResult = new SelectedTeamValidation();
+				validationResult.selectionFileMissing = false;
+				validationResult.roundCompleted = true;
+			} else if(receivedDate.after(lockoutTime)) {
+				validationResult = new SelectedTeamValidation();
+				validationResult.selectionFileMissing = false;
+				validationResult.roundCompleted = false;
+				validationResult.lockedOut = true;
 			} else {
-				selectedTeam = dflSelectedTeamService.getSelectedTeamForRound(round-1, teamCode);
 				
-				List<Integer> ins = insAndOuts.get("in");
-				List<Integer> outs = insAndOuts.get("out");
-				
-				for(int in : ins) {
-					if(in < 1 || in > 45) {
-						validationResult = new SelectedTeamValidation();
-						validationResult.selectionFileMissing = false;
-						break;
-					} else {
-						DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
-						
-						selectedPlayer.setRound(round);
-						selectedPlayer.setTeamCode(teamCode);
-						selectedPlayer.setTeamPlayerId(in);
-						
-						selectedTeam.add(selectedPlayer);
+				if(round == 1) {
+					List<Integer> ins = insAndOuts.get("in");
+					
+					selectedTeam = new ArrayList<>();
+					
+					for(int in : ins) {
+						if(in < 1 || in > 45) {
+							validationResult = new SelectedTeamValidation();
+							validationResult.selectionFileMissing = false;
+							validationResult.roundCompleted = false;
+							validationResult.lockedOut = false;
+							break;
+						} else {
+							DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
+							
+							selectedPlayer.setRound(round);
+							selectedPlayer.setTeamCode(teamCode);
+							selectedPlayer.setTeamPlayerId(in);
+							
+							selectedTeam.add(selectedPlayer);
+						}
 					}
-				}
-				
-				List<DflSelectedPlayer> playersToRemove = new ArrayList<>();
-				
-				for(int out : outs) {
-					if(out < 1 || out > 45) {
-						validationResult = new SelectedTeamValidation();
-						validationResult.selectionFileMissing = false;
-						break;
-					} else {
-						for(DflSelectedPlayer selectedPlayer : selectedTeam) {
-							if(selectedPlayer.getTeamPlayerId() == out) {
-								playersToRemove.add(selectedPlayer);
+				} else {
+					selectedTeam = dflSelectedTeamService.getSelectedTeamForRound(round-1, teamCode);
+					
+					List<Integer> ins = insAndOuts.get("in");
+					List<Integer> outs = insAndOuts.get("out");
+					
+					for(int in : ins) {
+						if(in < 1 || in > 45) {
+							validationResult = new SelectedTeamValidation();
+							validationResult.selectionFileMissing = false;
+							break;
+						} else {
+							DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
+							
+							selectedPlayer.setRound(round);
+							selectedPlayer.setTeamCode(teamCode);
+							selectedPlayer.setTeamPlayerId(in);
+							
+							selectedTeam.add(selectedPlayer);
+						}
+					}
+					
+					List<DflSelectedPlayer> playersToRemove = new ArrayList<>();
+					
+					for(int out : outs) {
+						if(out < 1 || out > 45) {
+							validationResult = new SelectedTeamValidation();
+							validationResult.selectionFileMissing = false;
+							break;
+						} else {
+							for(DflSelectedPlayer selectedPlayer : selectedTeam) {
+								if(selectedPlayer.getTeamPlayerId() == out) {
+									playersToRemove.add(selectedPlayer);
+								}
 							}
 						}
 					}
+					
+					selectedTeam.removeAll(playersToRemove);
 				}
-				
-				selectedTeam.removeAll(playersToRemove);
 			}
 			
 			if(validationResult == null) {
@@ -126,6 +153,7 @@ public class SelectedTeamValidationHandler {
 			dflSelectedTeamService.close();
 			dflTeamPlayerService.close();
 			dflPlayerService.close();
+			globalsService.close();
 			
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);
@@ -139,6 +167,8 @@ public class SelectedTeamValidationHandler {
 		SelectedTeamValidation validationResult = new SelectedTeamValidation();
 		
 		validationResult.selectionFileMissing = false;
+		validationResult.roundCompleted = false;
+		validationResult.lockedOut = false;
 		validationResult.teamPlayerCheckOk = true;
 		
 		int ffCount = 0;

@@ -5,11 +5,17 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxDriver;
 
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.AflFixture;
@@ -105,7 +111,8 @@ public class RawPlayerStatsHandler {
 			loggerUtils.log("info", "AFL games to download stats from: {}", fixturesToProcess);
 			loggerUtils.log("info", "Team to take stats from: {}", teamsToProcess);
 			
-			List<RawPlayerStats> playerStats = processFixtures(round, fixturesToProcess, teamsToProcess);
+			//List<RawPlayerStats> playerStats = processFixtures(round, fixturesToProcess, teamsToProcess);
+			List<RawPlayerStats> playerStats = altProcessFixtures(round, fixturesToProcess, teamsToProcess);
 			
 			loggerUtils.log("info", "Saving player stats to database");
 			
@@ -153,6 +160,46 @@ public class RawPlayerStatsHandler {
 		return playerStats;
 	}
 	
+	private List<RawPlayerStats> altProcessFixtures(int round, List<AflFixture> fixturesToProcess, Set<String> teamsToProcess) throws Exception {
+		
+		List<RawPlayerStats> playerStats = new ArrayList<>();
+		
+		String year = globalsService.getCurrentYear();
+		String statsUrl = globalsService.getAflStatsUrl();
+		
+		for(AflFixture fixture : fixturesToProcess) {
+			String homeTeam = fixture.getHomeTeam();
+			String awayTeam = fixture.getAwayTeam();
+			
+			String fullStatsUrl =  statsUrl + "/" + year + "/" + round + "/" + homeTeam.toLowerCase() + "-v-" + awayTeam.toLowerCase();
+			loggerUtils.log("info", "AFL stats URL: {}", fullStatsUrl);
+
+			WebDriver driver = new FirefoxDriver();
+			//driver = new PhantomJSDriver();
+			
+			driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
+			driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
+			driver.manage().window().setSize(new Dimension(1024, 768));
+				
+			driver.navigate().to(fullStatsUrl);
+						
+			if(driver.findElement(By.id("homeTeam-advanced")).isDisplayed()) {
+				System.out.println("Displayed");
+			}		
+			
+			if(teamsToProcess.contains(homeTeam)) {
+				playerStats.addAll(altGetStats(round, homeTeam, "h", driver));
+			}
+			if(teamsToProcess.contains(awayTeam)) {
+				playerStats.addAll(altGetStats(round, awayTeam, "a", driver));
+			}
+			
+			driver.close();
+		}
+		
+		return playerStats;
+	}
+	
 	private List<RawPlayerStats> getStats(int round, String aflTeam, String homeORaway, Document doc) throws Exception {
 		
 		Element teamStatsTable;
@@ -189,6 +236,54 @@ public class RawPlayerStatsHandler {
 			playerStats.setTackles(Integer.parseInt(stats.get(19).text()));
 			playerStats.setGoals(Integer.parseInt(stats.get(23).text()));
 			playerStats.setBehinds(Integer.parseInt(stats.get(24).text()));
+			
+			loggerUtils.log("info", "Player stats: {}", playerStats);
+			
+			teamStats.add(playerStats);
+		}
+		
+		return teamStats;
+	}
+	
+	private List<RawPlayerStats> altGetStats(int round, String aflTeam, String homeORaway, WebDriver driver) throws Exception {
+		
+		driver.findElement(By.cssSelector("a[href='#full-time-stats']")).click();
+		driver.findElement(By.cssSelector("a[href='#advanced-stats']")).click();
+		
+		List<WebElement> statsRecs;
+		List<RawPlayerStats> teamStats = new ArrayList<>();
+		
+		if(homeORaway.equals("h")) {
+			statsRecs = driver.findElement(By.id("homeTeam-advanced")).findElement(By.tagName("tbody")).findElements(By.tagName("tr"));
+			loggerUtils.log("info", "Found home team stats for: round={}; aflTeam={}; ", round, aflTeam);
+		} else {
+			statsRecs = driver.findElement(By.id("awayTeam-advanced")).findElement(By.tagName("tbody")).findElements(By.tagName("tr"));
+			loggerUtils.log("info", "Found away team stats for: round={}; aflTeam={}; ", round, aflTeam);
+		}
+		
+
+		
+		for(WebElement statsRec : statsRecs) {
+			List<WebElement> stats = statsRec.findElements(By.tagName("td"));
+			
+			RawPlayerStats playerStats = new RawPlayerStats();
+			playerStats.setRound(round);
+						
+			playerStats.setName(stats.get(0).findElements(By.tagName("span")).get(1).getText());
+			
+			playerStats.setTeam(aflTeam);
+			
+			playerStats.setJumperNo(Integer.parseInt(stats.get(1).getText()));
+			playerStats.setKicks(Integer.parseInt(stats.get(2).getText()));
+			playerStats.setHandballs(Integer.parseInt(stats.get(3).getText()));
+			playerStats.setDisposals(Integer.parseInt(stats.get(4).getText()));
+			playerStats.setMarks(Integer.parseInt(stats.get(9).getText()));
+			playerStats.setHitouts(Integer.parseInt(stats.get(12).getText()));
+			playerStats.setFreesFor(Integer.parseInt(stats.get(17).getText()));
+			playerStats.setFreesAgainst(Integer.parseInt(stats.get(18).getText()));
+			playerStats.setTackles(Integer.parseInt(stats.get(19).getText()));
+			playerStats.setGoals(Integer.parseInt(stats.get(23).getText()));
+			playerStats.setBehinds(Integer.parseInt(stats.get(24).getText()));
 			
 			loggerUtils.log("info", "Player stats: {}", playerStats);
 			

@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,7 +172,7 @@ public class EmailSelectionsHandler {
 							String attachementName = part.getFileName();
 							if(attachementName.equals("selections.txt")) {
 								loggerUtils.log("info", "Message from {}, has selection attachment", from);
-								validationResult = handleSelectionFile(part.getInputStream());
+								validationResult = handleSelectionFile(part.getInputStream(), messages[i].getReceivedDate());
 								//String key = from + ";" + teamCode;
 								//this.responses.put(key, true);
 								validationResult.setFrom(from);
@@ -179,7 +180,7 @@ public class EmailSelectionsHandler {
 								loggerUtils.log("info", "Message from {} ... SUCCESS!", from);
 							} else if (attachementName.equalsIgnoreCase("WINMAIL.DAT") || attachementName.equalsIgnoreCase("ATT00001.DAT")) {
 								loggerUtils.log("info", "Message from {}, is a TNEF message", from);
-								validationResult = handleTNEFMessage(part.getInputStream(), from);
+								validationResult = handleTNEFMessage(part.getInputStream(), from, messages[i].getReceivedDate());
 								//String key = from + ";" + teamCode;
 								//this.responses.put(key, true);
 								validationResult.setFrom(from);
@@ -235,7 +236,7 @@ public class EmailSelectionsHandler {
 		store.close();
 	}
 	
-	private SelectedTeamValidation handleTNEFMessage(InputStream inputStream, String from) throws Exception {
+	private SelectedTeamValidation handleTNEFMessage(InputStream inputStream, String from, Date receivedDate) throws Exception {
 
 		SelectedTeamValidation validationResult = null;
 		
@@ -248,7 +249,7 @@ public class EmailSelectionsHandler {
 
 				if (filename.equals("selections.txt")) {
 					loggerUtils.log("info", "Message from {}, has selection attachment", from);
-					validationResult = handleSelectionFile(attachment.getRawData());
+					validationResult = handleSelectionFile(attachment.getRawData(), receivedDate);
 				}
 			} 
 		}
@@ -258,7 +259,7 @@ public class EmailSelectionsHandler {
 		return validationResult;
 	}
 	
-	private SelectedTeamValidation handleSelectionFile(InputStream inputStream) throws Exception {
+	private SelectedTeamValidation handleSelectionFile(InputStream inputStream, Date receivedDate) throws Exception {
 		
 		String line = "";
 		String teamCode = "";
@@ -321,7 +322,7 @@ public class EmailSelectionsHandler {
 		
 		SelectedTeamValidationHandler validationHandler = new SelectedTeamValidationHandler();
 		validationHandler.configureLogging(mdcKey, loggerName, logfile);
-		SelectedTeamValidation validationResult = validationHandler.execute(round, teamCode, insAndOuts);
+		SelectedTeamValidation validationResult = validationHandler.execute(round, teamCode, insAndOuts, receivedDate);
 		
 		return validationResult;
 	}
@@ -392,6 +393,10 @@ public class EmailSelectionsHandler {
 		
 		if(validationResult.selectionFileMissing) {
 			messageBody = messageBody + "\t- You sent the email with no selections.txt\n";
+		} else if(validationResult.roundCompleted) {
+			messageBody = messageBody + "\t- The round you have in your selections.txt has past\n";
+		} else if(validationResult.lockedOut) {
+			messageBody = messageBody + "\t- The round you have in your selections.txt is in progress and doesn't allow more selections\n";
 		} else if(validationResult.unknownError) {
 			messageBody = messageBody + "\t- Some exception occured follow up email to xdfl google group.\n";
 		} else if(validationResult.teamPlayerCheckOk) {
@@ -420,7 +425,7 @@ public class EmailSelectionsHandler {
 			}
 		}
 		
-		messageBody = messageBody + "Please check your selections.txt file and try again.  " +
+		messageBody = messageBody + "\nPlease check your selections.txt file and try again.  " +
 				 "If it fails again, send an email to the google group and maybe if you are lucky someone will sort it out.\n\n" +
 				 "DFL Manager Admin";
 						

@@ -1,6 +1,9 @@
 package net.dflmngr.model.entity.keys;
 
-public class DflFixturePK {
+import java.io.Serializable;
+
+public class DflFixturePK implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	private int round;
 	private int game;

@@ -5,7 +5,6 @@ import java.util.Properties;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.naming.NamingException;
 
 import org.apache.commons.dbcp.BasicDataSource;
 

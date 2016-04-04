@@ -49,4 +49,28 @@ public class DflmngrUtils {
 	    AMPM.put("PM", Calendar.PM);
 	};
 
+	public static final Map<String, String> dflAflTeamMap;
+	static
+	{
+		dflAflTeamMap = new HashMap<String, String>();
+		dflAflTeamMap.put("Adel", "ADEL");
+		dflAflTeamMap.put("Bris", "BL");
+		dflAflTeamMap.put("Bull", "WB");
+		dflAflTeamMap.put("Carl", "CARL");
+		dflAflTeamMap.put("Coll", "COLL");
+		dflAflTeamMap.put("Ess", "ESS");
+		dflAflTeamMap.put("Freo", "FRE");
+		dflAflTeamMap.put("Geel", "GEEL");
+		dflAflTeamMap.put("Gold", "GCFC");
+		dflAflTeamMap.put("GWS", "GWS");
+		dflAflTeamMap.put("Haw", "HAW");
+		dflAflTeamMap.put("Melb", "MELB");
+		dflAflTeamMap.put("Nth", "NMFC");
+		dflAflTeamMap.put("Port", "PORT");
+		dflAflTeamMap.put("Rich", "RICH");
+		dflAflTeamMap.put("StK", "STK");
+		dflAflTeamMap.put("Syd", "SYD");
+		dflAflTeamMap.put("WCE", "WCE");	
+	}
+	
 }

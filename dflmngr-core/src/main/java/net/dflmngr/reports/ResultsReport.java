@@ -16,7 +16,9 @@ import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import net.dflmngr.jndi.JndiProvider;
 import net.dflmngr.logging.LoggingUtils;
+import net.dflmngr.model.entity.AflFixture;
 import net.dflmngr.model.entity.DflFixture;
 import net.dflmngr.model.entity.DflPlayer;
 import net.dflmngr.model.entity.DflPlayerScores;
@@ -24,6 +26,7 @@ import net.dflmngr.model.entity.DflSelectedPlayer;
 import net.dflmngr.model.entity.DflTeam;
 import net.dflmngr.model.entity.DflTeamScores;
 import net.dflmngr.model.entity.RawPlayerStats;
+import net.dflmngr.model.service.AflFixtureService;
 import net.dflmngr.model.service.DflFixtureService;
 import net.dflmngr.model.service.DflPlayerScoresService;
 import net.dflmngr.model.service.DflPlayerService;
@@ -32,6 +35,7 @@ import net.dflmngr.model.service.DflTeamScoresService;
 import net.dflmngr.model.service.DflTeamService;
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.RawPlayerStatsService;
+import net.dflmngr.model.service.impl.AflFixtureServiceImpl;
 import net.dflmngr.model.service.impl.DflFixtureServiceImpl;
 import net.dflmngr.model.service.impl.DflPlayerScoresServiceImpl;
 import net.dflmngr.model.service.impl.DflPlayerServiceImpl;
@@ -64,11 +68,12 @@ public class ResultsReport {
 	GlobalsService globalsService;
 	DflTeamService dflTeamService;
 	DflPlayerService dflPlayerService;
+	AflFixtureService aflFixtureService;
 	
 	String emailOverride;
 	
 	String[] resultsSpreadsheetHeaders = {"Player", "D", "M", "HO", "FF", "FA", "T", "G"};
-	String[] fixtureSheetHeader = {"Player", "K", "H", "D", "M", "HO", "FF", "FA", "T", "G", "B", "Score"};
+	String[] fixtureSheetHeader = {"No.", "Player", "Pos", "K", "H", "D", "M", "HO", "FF", "FA", "T", "G", "B", "Score"};
 	
 	public ResultsReport() {
 		rawPlayerStatsService = new RawPlayerStatsServiceImpl();
@@ -79,6 +84,7 @@ public class ResultsReport {
 		globalsService = new GlobalsServiceImpl();
 		dflTeamService = new DflTeamServiceImpl();
 		dflPlayerService = new DflPlayerServiceImpl();
+		aflFixtureService = new AflFixtureServiceImpl();
 	}
 	
 	public void configureLogging(String mdcKey, String loggerName, String logfile) {
@@ -100,6 +106,7 @@ public class ResultsReport {
 			loggerUtils.log("info", "Executing ResultsReport for rounds: {}, is final: {}", round, isFinal);
 			
 			if(emailOverride != null && !emailOverride.equals("")) {
+				loggerUtils.log("info", "Overriding email with: {}", emailOverride);
 				this.emailOverride = emailOverride;
 			}
 			
@@ -122,6 +129,7 @@ public class ResultsReport {
 			globalsService.close();
 			dflTeamService.close();
 			dflPlayerService.close();
+			aflFixtureService.close();
 			
 			loggerUtils.log("info", "ResultsReport Completed");
 			
@@ -140,7 +148,7 @@ public class ResultsReport {
 		} else {
 			reportName = "ResultsReport_Round_" + round + "_" + DflmngrUtils.getNowStr() + ".xlsx";
 		}
-		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "rawStatsReport", reportName);
+		Path reportLocation = Paths.get(globalsService.getAppDir(), globalsService.getReportDir(), "resultsReport", reportName);
 		
 		loggerUtils.log("info", "Writing Results Report");
 		loggerUtils.log("info", "Report name: {}", reportName);
@@ -237,12 +245,12 @@ public class ResultsReport {
 		cell.setCellStyle(teamNameStyle);
 		
 		team = dflTeamService.get(fixture.getAwayTeam());
-		cell = row.createCell(13);
+		cell = row.createCell(15);
 		cell.setCellValue(team.getName());
 		cell.setCellStyle(teamNameStyle);
 		
-		sheet.addMergedRegion(new CellRangeAddress(0,0,0,11));
-		sheet.addMergedRegion(new CellRangeAddress(0,0,13,24));
+		sheet.addMergedRegion(new CellRangeAddress(0,0,0,13));
+		sheet.addMergedRegion(new CellRangeAddress(0,0,15,28));
 		
 		row = sheet.createRow(1);
 		
@@ -252,9 +260,12 @@ public class ResultsReport {
 			cell.setCellStyle(style);
 		}
 		
-		for(int i = 13; i - 13 < this.fixtureSheetHeader.length; i++) {
+		cell = row.createCell(14);
+		cell.setCellValue("");
+		
+		for(int i = 15; i - 15 < this.fixtureSheetHeader.length; i++) {
 			cell = row.createCell(i);
-			cell.setCellValue(this.fixtureSheetHeader[i - 13]);
+			cell.setCellValue(this.fixtureSheetHeader[i - 15]);
 			cell.setCellStyle(style);
 		}
 	}
@@ -271,6 +282,8 @@ public class ResultsReport {
 		List<DflSelectedPlayer> selectedHomeTeam = dflSelectedTeamService.getSelectedTeamForRound(fixture.getRound(), fixture.getHomeTeam());
 		List<DflSelectedPlayer> selectedAwayTeam = dflSelectedTeamService.getSelectedTeamForRound(fixture.getRound(), fixture.getAwayTeam());
 		
+		List<AflFixture> playedFixtures = aflFixtureService.getAflFixturesPlayedForRound(fixture.getRound());
+		
 		int currentStatsRow = sheet.getLastRowNum()+1;
 		
 		for(DflSelectedPlayer selectedPlayer : selectedHomeTeam) {
@@ -278,17 +291,48 @@ public class ResultsReport {
 			DflPlayerScores score = playerScores.get(selectedPlayer.getPlayerId());
 			
 			XSSFRow row = sheet.createRow(sheet.getLastRowNum()+1);
+
+			DflPlayer player = dflPlayerService.get(selectedPlayer.getPlayerId());
+			String playerName = player.getFirstName() + " " + player.getLastName();
 			
 			if(score == null) {
-				DflPlayer player = dflPlayerService.get(selectedPlayer.getPlayerId());
-				String playerName = player.getFirstName() + " " + player.getLastName();
+				
+				boolean played = false;
+				for(AflFixture playedFixture : playedFixtures) {
+					String aflTeam = player.getAflClub();
+					if(DflmngrUtils.dflAflTeamMap.get(aflTeam).equals(playedFixture.getHomeTeam())) {
+						played = true;
+						break;
+					}
+					if(DflmngrUtils.dflAflTeamMap.get(aflTeam).equals(playedFixture.getAwayTeam())) {
+						played = true;
+						break;
+					}
+				}
 				
 				for(int i = 0; i < this.fixtureSheetHeader.length; i++) {
 					XSSFCell cell = row.createCell(i);
 					
 					switch(i) {
-						case 0: cell.setCellValue(playerName); break;
-						case 11: cell.setCellValue("dnp"); break;
+						case 0: cell.setCellValue(selectedPlayer.getTeamPlayerId()); break;
+						case 1: cell.setCellValue(playerName); break;
+						case 2: cell.setCellValue(player.getPosition()); break;
+						case 3: cell.setCellValue(""); break;
+						case 4: cell.setCellValue(""); break;
+						case 5: cell.setCellValue(""); break;
+						case 6: cell.setCellValue(""); break;
+						case 7: cell.setCellValue(""); break;
+						case 8: cell.setCellValue(""); break;
+						case 9: cell.setCellValue(""); break;
+						case 10: cell.setCellValue(""); break;
+						case 11: cell.setCellValue(""); break;
+						case 12: cell.setCellValue(""); break;
+						case 13: if(played) {
+									cell.setCellValue("dnp");
+								} else {
+									cell.setCellValue(0);
+								}
+								break;
 					}
 				}
 			} else {
@@ -299,18 +343,20 @@ public class ResultsReport {
 					XSSFCell cell = row.createCell(i);
 					
 					switch(i) {
-						case 0: cell.setCellValue(stats.getName()); break;
-						case 1: cell.setCellValue(stats.getKicks()); break;
-						case 2: cell.setCellValue(stats.getHandballs()); break;
-						case 3: cell.setCellValue(stats.getDisposals()); break;
-						case 4: cell.setCellValue(stats.getMarks()); break;
-						case 5: cell.setCellValue(stats.getHitouts()); break;
-						case 6: cell.setCellValue(stats.getFreesFor()); break;
-						case 7: cell.setCellValue(stats.getFreesAgainst()); break;
-						case 8: cell.setCellValue(stats.getTackles()); break;
-						case 9: cell.setCellValue(stats.getGoals()); break;
-						case 10: cell.setCellValue(stats.getBehinds()); break;
-						case 11: cell.setCellValue(score.getScore()); break;
+						case 0: cell.setCellValue(selectedPlayer.getTeamPlayerId()); break;
+						case 1: cell.setCellValue(stats.getName()); break;
+						case 2: cell.setCellValue(player.getPosition()); break;
+						case 3: cell.setCellValue(stats.getKicks()); break;
+						case 4: cell.setCellValue(stats.getHandballs()); break;
+						case 5: cell.setCellValue(stats.getDisposals()); break;
+						case 6: cell.setCellValue(stats.getMarks()); break;
+						case 7: cell.setCellValue(stats.getHitouts()); break;
+						case 8: cell.setCellValue(stats.getFreesFor()); break;
+						case 9: cell.setCellValue(stats.getFreesAgainst()); break;
+						case 10: cell.setCellValue(stats.getTackles()); break;
+						case 11: cell.setCellValue(stats.getGoals()); break;
+						case 12: cell.setCellValue(stats.getBehinds()); break;
+						case 13: cell.setCellValue(score.getScore()); break;
 					}
 				}
 			}
@@ -324,17 +370,48 @@ public class ResultsReport {
 			if(row == null) {
 				row = sheet.createRow(currentStatsRow);
 			}
+
+			DflPlayer player = dflPlayerService.get(selectedPlayer.getPlayerId());
+			String playerName = player.getFirstName() + " " + player.getLastName();
 			
 			if(score == null) {
-				DflPlayer player = dflPlayerService.get(selectedPlayer.getPlayerId());
-				String playerName = player.getFirstName() + " " + player.getLastName();
+				
+				boolean played = false;
+				for(AflFixture playedFixture : playedFixtures) {
+					String aflTeam = player.getAflClub();
+					if(DflmngrUtils.dflAflTeamMap.get(aflTeam).equals(playedFixture.getHomeTeam())) {
+						played = true;
+						break;
+					}
+					if(DflmngrUtils.dflAflTeamMap.get(aflTeam).equals(playedFixture.getAwayTeam())) {
+						played = true;
+						break;
+					}	
+				}
 				
 				for(int i = 0; i < this.fixtureSheetHeader.length; i++) {
-					XSSFCell cell = row.createCell(i);
+					XSSFCell cell = row.createCell(i+15);
 					
 					switch(i) {
-						case 0: cell.setCellValue(playerName); break;
-						case 11: cell.setCellValue("dnp"); break;
+					case 0: cell.setCellValue(selectedPlayer.getTeamPlayerId()); break;
+					case 1: cell.setCellValue(playerName); break;
+					case 2: cell.setCellValue(player.getPosition()); break;
+					case 3: cell.setCellValue(""); break;
+					case 4: cell.setCellValue(""); break;
+					case 5: cell.setCellValue(""); break;
+					case 6: cell.setCellValue(""); break;
+					case 7: cell.setCellValue(""); break;
+					case 8: cell.setCellValue(""); break;
+					case 9: cell.setCellValue(""); break;
+					case 10: cell.setCellValue(""); break;
+					case 11: cell.setCellValue(""); break;
+					case 12: cell.setCellValue(""); break;
+					case 13: if(played) {
+									cell.setCellValue("dnp");
+								} else {
+									cell.setCellValue(0);
+								}
+								break;
 					}
 				}
 			} else {
@@ -342,21 +419,23 @@ public class ResultsReport {
 				RawPlayerStats stats =  playerStats.get(score.getAflPlayerId());
 				
 				for(int i = 0; i < this.fixtureSheetHeader.length; i++) {
-					XSSFCell cell = row.createCell(i+13);
+					XSSFCell cell = row.createCell(i+15);
 					
 					switch(i) {
-						case 0: cell.setCellValue(stats.getName()); break;
-						case 1: cell.setCellValue(stats.getKicks()); break;
-						case 2: cell.setCellValue(stats.getHandballs()); break;
-						case 3: cell.setCellValue(stats.getDisposals()); break;
-						case 4: cell.setCellValue(stats.getMarks()); break;
-						case 5: cell.setCellValue(stats.getHitouts()); break;
-						case 6: cell.setCellValue(stats.getFreesFor()); break;
-						case 7: cell.setCellValue(stats.getFreesAgainst()); break;
-						case 8: cell.setCellValue(stats.getTackles()); break;
-						case 9: cell.setCellValue(stats.getGoals()); break;
-						case 10: cell.setCellValue(stats.getBehinds()); break;
-						case 11: cell.setCellValue(score.getScore()); break;
+						case 0: cell.setCellValue(selectedPlayer.getTeamPlayerId()); break;
+						case 1: cell.setCellValue(stats.getName()); break;
+						case 2: cell.setCellValue(player.getPosition()); break;
+						case 3: cell.setCellValue(stats.getKicks()); break;
+						case 4: cell.setCellValue(stats.getHandballs()); break;
+						case 5: cell.setCellValue(stats.getDisposals()); break;
+						case 6: cell.setCellValue(stats.getMarks()); break;
+						case 7: cell.setCellValue(stats.getHitouts()); break;
+						case 8: cell.setCellValue(stats.getFreesFor()); break;
+						case 9: cell.setCellValue(stats.getFreesAgainst()); break;
+						case 10: cell.setCellValue(stats.getTackles()); break;
+						case 11: cell.setCellValue(stats.getGoals()); break;
+						case 12: cell.setCellValue(stats.getBehinds()); break;
+						case 13: cell.setCellValue(score.getScore()); break;
 					}
 				}
 			}
@@ -365,19 +444,19 @@ public class ResultsReport {
 		}
 		
 		XSSFRow row = sheet.createRow(sheet.getLastRowNum()+1);
-		XSSFCell cell = row.createCell(10);
+		XSSFCell cell = row.createCell(12);
 		cell.setCellValue("Total");
 		cell.setCellStyle(style);
 		
-		cell = row.createCell(11);
+		cell = row.createCell(13);
 		cell.setCellValue(teamScores.get(fixture.getHomeTeam()).getScore());
 		cell.setCellStyle(style);
 		
-		cell = row.createCell(23);
+		cell = row.createCell(27);
 		cell.setCellValue("Total");
 		cell.setCellStyle(style);
 		
-		cell = row.createCell(24);
+		cell = row.createCell(28);
 		cell.setCellValue(teamScores.get(fixture.getAwayTeam()).getScore());
 		cell.setCellStyle(style);
 	}
@@ -463,6 +542,48 @@ public class ResultsReport {
 		body = body + "\n" + "Current scores attached.\n\nDfl Manager Admin";
 		
 		return body;
+	}
+	
+	public static void main(String[] args) {
+		
+		try {
+			String email = null;
+			int round = 0;
+			boolean isFinal = false;
+			
+			if(args.length > 3 || args.length < 1) {
+				System.out.println("usage: RawStatsReport <round> optional [Final <email>]");
+			} else {
+				
+				round = Integer.parseInt(args[0]);
+				
+				if(args.length == 2) {
+					if(args[1].equalsIgnoreCase("Final")) {
+						isFinal = true;
+					} else {
+						email = args[1];
+					}
+				} else if(args.length == 3) {
+					if(args[1].equalsIgnoreCase("Final")) {
+						isFinal = true;
+						email = args[2];
+					} else if(args[2].equalsIgnoreCase("Final")) {
+						isFinal = true;
+						email = args[1];
+					} else {
+						System.out.println("usage: RawStatsReport <round> optional [Final <email>]");
+					}
+				}
+				
+				JndiProvider.bind();
+				
+				ResultsReport report = new ResultsReport();
+				report.configureLogging("batch.name", "batch-logger", "ResultsReport");
+				report.execute(round, isFinal, email);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 }

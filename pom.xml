@@ -21,7 +21,8 @@
 		<module>dflmngr-web</module>
 		<module>dflmngr-client</module>
 		<module>dflmngr-base</module>
-    <module>dflmngr-deploy</module>
+	    <module>dflmngr-deploy</module>
+	    
   </modules>
 
 	<dependencies>
@@ -140,6 +141,12 @@
            <id>prod</id>
            <properties>
                <env.filter.file>prod.filter.properties</env.filter.file>
+           </properties>
+       </profile>
+       <profile>
+           <id>eclipse</id>
+           <properties>
+               <env.filter.file>eclipse.filter.properties</env.filter.file>
            </properties>
        </profile>
 	</profiles>
