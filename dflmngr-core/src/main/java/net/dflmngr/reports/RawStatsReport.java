@@ -194,7 +194,7 @@ public class RawStatsReport {
 		attachments.add(reportName);
 		
 		loggerUtils.log("info", "Emailing to={}; reportName={}", to, reportName);
-		EmailUtils.send(to, dflMngrEmail, subject, body, attachments);
+		EmailUtils.sendTextEmail(to, dflMngrEmail, subject, body, attachments);
 	}
 	
 	public static void main(String[] args) {

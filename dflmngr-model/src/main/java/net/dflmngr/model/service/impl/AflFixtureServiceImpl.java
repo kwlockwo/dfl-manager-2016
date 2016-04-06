@@ -98,4 +98,17 @@ public class AflFixtureServiceImpl extends GenericServiceImpl<AflFixture, AflFix
 		
 		return playedFixture;
 	}
+	
+	public List<String> getAflTeamsPlayedForRound(int round) {
+		List<String> playedTeams = new ArrayList<>();
+		
+		List<AflFixture> playedFixtures = getAflFixturesPlayedForRound(round);
+		
+		for(AflFixture fixture : playedFixtures) {
+			playedTeams.add(fixture.getHomeTeam());
+			playedTeams.add(fixture.getAwayTeam());
+		}
+		
+		return playedTeams;
+	}
 }

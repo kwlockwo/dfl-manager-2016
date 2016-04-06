@@ -27,6 +27,7 @@
 		<class>net.dflmngr.model.entity.DflFixture</class>
 		<class>net.dflmngr.model.entity.DflPlayerScores</class>
 		<class>net.dflmngr.model.entity.DflTeamScores</class>
+		<class>net.dflmngr.model.entity.DflLadder</class>
 
 		<properties>
 			<!-- <property name="javax.persistence.jdbc.password" value="${db.user}" />

@@ -16,7 +16,7 @@ public class DflFixtureServiceImpl extends GenericServiceImpl<DflFixture, DflFix
 		super.setDao(dao);
 	}
 	
-	public List<DflFixture> getFixturesForROund(int round) {
+	public List<DflFixture> getFixturesForRound(int round) {
 		List<DflFixture> fixtures = dao.findAflFixturesForRound(round);
 		return fixtures;
 	}

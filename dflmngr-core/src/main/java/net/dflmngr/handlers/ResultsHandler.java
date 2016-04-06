@@ -1,5 +1,13 @@
 package net.dflmngr.handlers;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import net.dflmngr.jndi.JndiProvider;
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.reports.ResultsReport;
@@ -30,7 +38,7 @@ public class ResultsHandler {
 		emailOverride = null;
 	}
 	
-	public void execute(int round, boolean isFinal, String emailOverride) {
+	public void execute(int round, boolean isFinal, String emailOverride, boolean skipStats) {
 		
 		try{
 			if(!isExecutable) {
@@ -45,15 +53,22 @@ public class ResultsHandler {
 				this.emailOverride = emailOverride;
 			}
 			
-			loggerUtils.log("info", "Getting stats");
-			RawPlayerStatsHandler statsHandler = new RawPlayerStatsHandler();
-			statsHandler.configureLogging(mdcKey, loggerName, logfile);
-			statsHandler.execute(round);
+			if(!skipStats) {
+				loggerUtils.log("info", "Getting stats");
+				RawPlayerStatsHandler statsHandler = new RawPlayerStatsHandler();
+				statsHandler.configureLogging(mdcKey, loggerName, logfile);
+				statsHandler.execute(round);
+			}
 			
 			loggerUtils.log("info", "Calculating scores");
 			ScoresCalculatorHandler scoresCalculator = new ScoresCalculatorHandler();
 			scoresCalculator.configureLogging(mdcKey, loggerName, logfile);
 			scoresCalculator.execute(round);
+			
+			loggerUtils.log("info", "Calculating Ladder");
+			LadderCalculatorHandler ladderCalculator = new LadderCalculatorHandler();
+			ladderCalculator.configureLogging(mdcKey, loggerName, logfile);
+			ladderCalculator.execute(round);
 			
 			loggerUtils.log("info", "Writing report");
 			ResultsReport resultsReport = new ResultsReport();
@@ -68,13 +83,42 @@ public class ResultsHandler {
 	
 	public static void main(String[] args) {
 		
+		Options options = new Options();
+		
+		Option roundOpt  = Option.builder("r").argName("round").hasArg().desc("round to run on").type(Number.class).required().build();
+		Option emailOPt = Option.builder("e").argName("email").hasArg().desc("override email distribution").build();
+		Option finalOpt = new Option("f", "final run");
+		Option skipStatsOpt = new Option("ss", "skip stats download");
+		
+		options.addOption(roundOpt);
+		options.addOption(emailOPt);
+		options.addOption(finalOpt);
+		options.addOption(skipStatsOpt);
+		
 		try {
 			String email = null;
 			int round = 0;
 			boolean isFinal = false;
+			boolean skipStats = false;
+						
+			CommandLineParser parser = new DefaultParser();
+			CommandLine cli = parser.parse(options, args);
 			
+			round = ((Number)cli.getParsedOptionValue("r")).intValue();
+			
+			if(cli.hasOption("e")) {
+				email = cli.getOptionValue("e");
+			}
+			if(cli.hasOption("f")) {
+				isFinal = true;
+			}
+			if(cli.hasOption("ss")) {
+				skipStats=true;
+			}
+			
+			/*
 			if(args.length > 3 || args.length < 2) {
-				System.out.println("usage: RawStatsReport <round> optional [Final <email>]");
+				System.out.println("usage: RawStatsReport <round> optional [Final <email> skipStats]");
 			} else {
 				
 				round = Integer.parseInt(args[0]);
@@ -82,27 +126,36 @@ public class ResultsHandler {
 				if(args.length == 2) {
 					if(args[1].equalsIgnoreCase("Final")) {
 						isFinal = true;
+					} else if(args[1].equalsIgnoreCase("skipStats")) {
+						skipStats = true;
 					} else {
 						email = args[1];
 					}
 				} else if(args.length == 3) {
 					if(args[1].equalsIgnoreCase("Final")) {
 						isFinal = true;
-						email = args[2];
+						if(args[2].equalsIgnoreCase("skipStats")) {
+							skipStats = true;
+						} else {
+							email = args[2];
+						}
 					} else if(args[2].equalsIgnoreCase("Final")) {
 						isFinal = true;
 						email = args[1];
 					} else {
 						System.out.println("usage: RawStatsReport <round> optional [Final <email>]");
 					}
-				}
+				}*/
 				
 				JndiProvider.bind();
 				
 				ResultsHandler resultsHandler = new ResultsHandler();
 				resultsHandler.configureLogging("batch.name", "batch-logger", ("ResultsHandler_R" + round));
-				resultsHandler.execute(round, isFinal, email);
-			}
+				resultsHandler.execute(round, isFinal, email, skipStats);
+			//}
+		} catch (ParseException ex) {
+			HelpFormatter formatter = new HelpFormatter();
+			formatter.printHelp( "RawStatsReport", options );
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

@@ -29,7 +29,7 @@ public class EmailUtils {
 	private static String mailUsername = globalsService.getEmailConfig().get("mailUsername");;
 	private static String mailPassword = globalsService.getEmailConfig().get("mailPassword");;
 	
-	public static void send(List<String> to, String from, String subject, String body, List<String> attachments) throws Exception {
+	public static void sendTextEmail(List<String> to, String from, String subject, String body, List<String> attachments) throws Exception {
 	
 		MimeMessage message = new MimeMessage(getMailSession());
 		message.setFrom(new InternetAddress(from));
@@ -63,6 +63,45 @@ public class EmailUtils {
 			message.setContent(multipart);
 		} else {
 			message.setContent(body, "text/plain");
+		}
+
+		Transport.send(message);
+	}
+	
+	public static void sendHtmlEmail(List<String> to, String from, String subject, String body, List<String> attachments) throws Exception {
+		
+		MimeMessage message = new MimeMessage(getMailSession());
+		message.setFrom(new InternetAddress(from));
+		
+		InternetAddress[] toAddresses = new InternetAddress[to.size()]; 
+		
+		for(int i = 0; i < to.size(); i++) {
+			toAddresses[i] = new InternetAddress(to.get(i));
+		}
+		
+		message.setRecipients(Message.RecipientType.TO, toAddresses);
+		message.setSubject(subject);
+
+		
+		if(attachments != null && !attachments.isEmpty()) {
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent(body, "text/html");
+
+			Multipart multipart = new MimeMultipart("mixed");
+			multipart.addBodyPart(messageBodyPart);
+
+			for(String attachment : attachments) {
+				messageBodyPart = new MimeBodyPart();
+				
+				DataSource source = new FileDataSource(attachment);
+				messageBodyPart.setDataHandler(new DataHandler(source));
+				messageBodyPart.setFileName(source.getName());
+				multipart.addBodyPart(messageBodyPart);
+			}
+			
+			message.setContent(multipart);
+		} else {
+			message.setContent(body, "text/html");
 		}
 
 		Transport.send(message);

@@ -12,4 +12,5 @@ public interface AflFixtureService extends GenericService<AflFixture, AflFixture
 	public Map<Integer, List<AflFixture>> getAflFixturneRoundBlocks();
 	public List<AflFixture> getAflFixturesPlayedForRound(int round);
 	public AflFixture getPlayedGame(int round, int game);
+	public List<String> getAflTeamsPlayedForRound(int round);
 }

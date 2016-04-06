@@ -38,7 +38,7 @@ public class ResultsJob implements Job {
 			resultsHandler.configureLogging("online.name", "online-logger", logFile);
 
 			loggerUtils.log("info", "Running ProgressRound: round={};", round);
-			resultsHandler.execute(round, isFinal, null);
+			resultsHandler.execute(round, isFinal, null, false);
 			loggerUtils.log("info", "ProgressRoundJob completed");
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);

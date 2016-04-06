@@ -59,7 +59,7 @@ public class EmailerHandler {
 		List<String> attachments = emailRequest.getAttachments().getAttachement();
 		
 		
-		EmailUtils.send(to, from, subject, body, attachments);	
+		EmailUtils.sendTextEmail(to, from, subject, body, attachments);	
 	}
 
 }
