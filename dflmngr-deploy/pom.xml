@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>net.dflmngr</groupId>
 		<artifactId>dflmngr</artifactId>
-		<version>rc3_0.3.2</version>
+		<version>rc4_0.4.3</version>
 	</parent>
 
 	<artifactId>dflmngr-deploy</artifactId>
