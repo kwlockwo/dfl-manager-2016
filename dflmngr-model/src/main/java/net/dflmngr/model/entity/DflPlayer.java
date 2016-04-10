@@ -28,6 +28,9 @@ public class DflPlayer {
 	
 	@Column(name = "afl_player_id")
 	private String aflPlayerId;
+	
+	@Column(name = "is_first_year")
+	private boolean isFirstYear;
 
 	public int getPlayerId() {
 		return playerId;
@@ -92,12 +95,19 @@ public class DflPlayer {
 	public void setAflPlayerId(String aflPlayerId) {
 		this.aflPlayerId = aflPlayerId;
 	}
+	public boolean isFirstYear() {
+		return isFirstYear;
+	}
+
+	public void setFirstYear(boolean isFirstYear) {
+		this.isFirstYear = isFirstYear;
+	}
 
 	@Override
 	public String toString() {
 		return "DflPlayer [playerId=" + playerId + ", firstName=" + firstName + ", lastName=" + lastName + ", inital="
 				+ inital + ", status=" + status + ", aflClub=" + aflClub + ", position=" + position + ", aflPlayerId="
-				+ aflPlayerId + "]";
+				+ aflPlayerId + ", isFirstYear=" + isFirstYear + "]";
 	}
 
 	@Override
@@ -108,6 +118,7 @@ public class DflPlayer {
 		result = prime * result + ((aflPlayerId == null) ? 0 : aflPlayerId.hashCode());
 		result = prime * result + ((firstName == null) ? 0 : firstName.hashCode());
 		result = prime * result + ((inital == null) ? 0 : inital.hashCode());
+		result = prime * result + (isFirstYear ? 1231 : 1237);
 		result = prime * result + ((lastName == null) ? 0 : lastName.hashCode());
 		result = prime * result + playerId;
 		result = prime * result + ((position == null) ? 0 : position.hashCode());
@@ -143,6 +154,8 @@ public class DflPlayer {
 			if (other.inital != null)
 				return false;
 		} else if (!inital.equals(other.inital))
+			return false;
+		if (isFirstYear != other.isFirstYear)
 			return false;
 		if (lastName == null) {
 			if (other.lastName != null)

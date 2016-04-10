@@ -23,9 +23,25 @@ public class DflPlayerScoresServiceImpl extends GenericServiceImpl<DflPlayerScor
 		return playerScores;
 	}
 	
+	public List<DflPlayerScores> getForRoundAndTeam(int round, String teamCode) {
+		List<DflPlayerScores> playerScores = dao.findForRoundAndTeam(round, teamCode);
+		return playerScores;
+	}
+	
 	public Map<Integer, DflPlayerScores> getForRoundWithKey(int round) {
 		Map<Integer, DflPlayerScores> playerScoresWithKey = new HashMap<>();
 		List<DflPlayerScores> scores = getForRound(round);
+		
+		for(DflPlayerScores playerScore : scores) {
+			playerScoresWithKey.put(playerScore.getPlayerId(), playerScore);
+		}
+		
+		return playerScoresWithKey;
+	}
+	
+	public Map<Integer, DflPlayerScores> getForRoundAndTeamWithKey(int round, String teamCode) {
+		Map<Integer, DflPlayerScores> playerScoresWithKey = new HashMap<>();
+		List<DflPlayerScores> scores = getForRoundAndTeam(round, teamCode);
 		
 		for(DflPlayerScores playerScore : scores) {
 			playerScoresWithKey.put(playerScore.getPlayerId(), playerScore);

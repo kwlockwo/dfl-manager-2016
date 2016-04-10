@@ -23,4 +23,18 @@ public final class DflPlayerScoresDaoImpl extends GenericDaoImpl<DflPlayerScores
 		
 		return entitys;
 	}
+	
+	public List<DflPlayerScores> findForRoundAndTeam(int round, String teamCode) {
+		criteriaBuilder = entityManager.getCriteriaBuilder();
+		criteriaQuery = criteriaBuilder.createQuery(entityClass);
+		entity = criteriaQuery.from(entityClass);
+		
+		Predicate roundEquals = criteriaBuilder.equal(entity.get(DflPlayerScores_.round), round);
+		Predicate temaCodeEquals = criteriaBuilder.equal(entity.get(DflPlayerScores_.teamCode), teamCode);
+		
+		criteriaQuery.where(criteriaBuilder.and(roundEquals, temaCodeEquals));
+		List<DflPlayerScores> entitys = entityManager.createQuery(criteriaQuery).getResultList();
+		
+		return entitys;
+	}
 }

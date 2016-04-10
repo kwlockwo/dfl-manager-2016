@@ -271,23 +271,23 @@ public class EmailSelectionsHandler {
 		loggerUtils.log("info", "Moving messages to Processed folder");
 		
 		while((line = reader.readLine()) != null) {
-			
-			if(line.equalsIgnoreCase("[team]")) {
-				line = reader.readLine();
+				
+			if(line.toLowerCase().contains("[team]")) {
+				line = reader.readLine().trim();
 				teamCode = line;
 				loggerUtils.log("info", "Selections for team: {}", teamCode);
 			}
 			
-			if(line.equalsIgnoreCase("[round]")) {
-				line = reader.readLine();
+			if(line.toLowerCase().contains("[round]")) {
+				line = reader.readLine().trim();
 				round = Integer.parseInt(line);
 				loggerUtils.log("info", "Selections for round: {}", round);
 			}
 			
-			if(line.equalsIgnoreCase("[in]")) {
+			if(line.toLowerCase().contains("[in]")) {
 				while(reader.ready()) {
-					line = reader.readLine();
-					if(line.equalsIgnoreCase("[out]")) {
+					line = reader.readLine().trim();
+					if(line.toLowerCase().contains("[out]")) {
 						break;
 					} else if(line.equalsIgnoreCase("")) {
 						// ignore blank lines
@@ -298,10 +298,10 @@ public class EmailSelectionsHandler {
 				loggerUtils.log("info", "Selection in: {}", ins);
 			}
 			
-			if(line.equalsIgnoreCase("[out]")) {
+			if(line.toLowerCase().contains("[out]")) {
 				while(reader.ready()) {
-					line = reader.readLine();
-					if(line.equalsIgnoreCase("[in]")) {
+					line = reader.readLine().trim();
+					if(line.toLowerCase().contains("[in]")) {
 						break;
 					} else if(line.equalsIgnoreCase("")) {
 						// ignore blank lines
@@ -399,7 +399,7 @@ public class EmailSelectionsHandler {
 			messageBody = messageBody + "\t- The round you have in your selections.txt is in progress and doesn't allow more selections\n";
 		} else if(validationResult.unknownError) {
 			messageBody = messageBody + "\t- Some exception occured follow up email to xdfl google group.\n";
-		} else if(validationResult.teamPlayerCheckOk) {
+		} else if(!validationResult.teamPlayerCheckOk) {
 			messageBody = messageBody + "\t- The ins and/or outs numbers sent are not correct\n";
 		} else {
 			if(!validationResult.ffCheckOk) {

@@ -1,5 +1,7 @@
 package net.dflmngr.model.entity;
 
+import java.util.Comparator;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -11,7 +13,7 @@ import net.dflmngr.model.entity.keys.DflPlayerScoresPK;
 @Entity
 @Table(name="dfl_player_scores")
 @IdClass(DflPlayerScoresPK.class)
-public class DflPlayerScores {
+public class DflPlayerScores implements Comparator<DflPlayerScores>, Comparable<DflPlayerScores> {
 	
 	@Id
 	@Column(name="player_id")
@@ -113,5 +115,15 @@ public class DflPlayerScores {
 		if (teamPlayerId != other.teamPlayerId)
 			return false;
 		return true;
+	}
+	
+	@Override
+	public int compareTo(DflPlayerScores o) {
+		return this.score > o.score ? 1 : (this.score < o.score ? -1 : 0);
+	}
+	
+	@Override
+	public int compare(DflPlayerScores o1, DflPlayerScores o2) {
+		return o1.score > o2.score ? 1 : (o2.score < o2.score ? -1 : 0);
 	}
 }

@@ -7,4 +7,5 @@ import net.dflmngr.model.entity.keys.DflPlayerScoresPK;
 
 public interface DflPlayerScoresDao extends GenericDao<DflPlayerScores, DflPlayerScoresPK> {
 	public List<DflPlayerScores> findForRound(int round);
+	public List<DflPlayerScores> findForRoundAndTeam(int round, String teamCode);
 }
