@@ -177,8 +177,8 @@ public class RawPlayerStatsHandler {
 			WebDriver driver = new FirefoxDriver();
 			//driver = new PhantomJSDriver();
 			
-			driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
-			driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
+			driver.manage().timeouts().implicitlyWait(30, TimeUnit.SECONDS);
+			driver.manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
 			driver.manage().window().setSize(new Dimension(1024, 768));
 				
 			driver.navigate().to(fullStatsUrl);
