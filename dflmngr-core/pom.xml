@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>net.dflmngr</groupId>
 		<artifactId>dflmngr</artifactId>
-		<version>rc4_0.4.3</version>
+		<version>rc5_0.5.4</version>
 	</parent>
 	<artifactId>dflmngr-core</artifactId>
 	<name>dflmngr-core</name>
