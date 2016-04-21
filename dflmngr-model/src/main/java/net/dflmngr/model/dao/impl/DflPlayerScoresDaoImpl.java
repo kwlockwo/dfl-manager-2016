@@ -18,7 +18,7 @@ public final class DflPlayerScoresDaoImpl extends GenericDaoImpl<DflPlayerScores
 		
 		Predicate equals = criteriaBuilder.equal(entity.get(DflPlayerScores_.round), round);
 		
-		criteriaQuery.where(criteriaBuilder.and(equals));
+		criteriaQuery.where(equals);
 		List<DflPlayerScores> entitys = entityManager.createQuery(criteriaQuery).getResultList();
 		
 		return entitys;

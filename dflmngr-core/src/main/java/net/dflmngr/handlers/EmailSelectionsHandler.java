@@ -60,6 +60,8 @@ public class EmailSelectionsHandler {
 	
 	Session mailSession;
 	
+	boolean selectionsFileAttached;
+	
 	//Map <String, Boolean> responses;
 	
 	List<SelectedTeamValidation> validationResults;
@@ -155,6 +157,8 @@ public class EmailSelectionsHandler {
 						
 			SelectedTeamValidation validationResult = null;
 			
+			selectionsFileAttached = false;
+			
 			try {
 				
 				String from = InternetAddress.toString(messages[i].getFrom());
@@ -172,6 +176,7 @@ public class EmailSelectionsHandler {
 							String attachementName = part.getFileName();
 							if(attachementName.equals("selections.txt")) {
 								loggerUtils.log("info", "Message from {}, has selection attachment", from);
+								selectionsFileAttached = true;
 								validationResult = handleSelectionFile(part.getInputStream(), messages[i].getReceivedDate());
 								//String key = from + ";" + teamCode;
 								//this.responses.put(key, true);
@@ -194,7 +199,14 @@ public class EmailSelectionsHandler {
 				if(validationResult == null) {
 					//this.responses.put(from, false);
 					validationResult = new SelectedTeamValidation();
-					validationResult.selectionFileMissing = true;
+					if(selectionsFileAttached) {
+						validationResult.unknownError = true;
+						validationResult.selectionFileMissing = false;
+						validationResult.roundCompleted = false;
+						validationResult.lockedOut = false;
+					} else {
+						validationResult.selectionFileMissing = true;
+					}
 					validationResult.setFrom(from);
 					validationResults.add(validationResult);
 					loggerUtils.log("info", "Message from {} ... FAILURE!", from);
@@ -213,6 +225,9 @@ public class EmailSelectionsHandler {
 					//this.responses.put(from, false);
 					validationResult = new SelectedTeamValidation();
 					validationResult.unknownError = true;
+					validationResult.selectionFileMissing = false;
+					validationResult.roundCompleted = false;
+					validationResult.lockedOut = false;
 					validationResult.setFrom(from);
 					validationResults.add(validationResult);
 					loggerUtils.log("info", "Message from {} ... FAILURE with EXCEPTION!", from);
@@ -249,6 +264,7 @@ public class EmailSelectionsHandler {
 
 				if (filename.equals("selections.txt")) {
 					loggerUtils.log("info", "Message from {}, has selection attachment", from);
+					selectionsFileAttached = true;
 					validationResult = handleSelectionFile(attachment.getRawData(), receivedDate);
 				}
 			} 
@@ -273,14 +289,30 @@ public class EmailSelectionsHandler {
 		while((line = reader.readLine()) != null) {
 				
 			if(line.toLowerCase().contains("[team]")) {
-				line = reader.readLine().trim();
-				teamCode = line;
+				while(reader.ready()) {
+					line = reader.readLine().trim();
+					if(line.toLowerCase().contains("[round]")) {
+						break;
+					} else if(line.equalsIgnoreCase("")) {
+						// ignore blank lines
+					} else {
+						teamCode = line;
+					}
+				}
 				loggerUtils.log("info", "Selections for team: {}", teamCode);
 			}
 			
 			if(line.toLowerCase().contains("[round]")) {
-				line = reader.readLine().trim();
-				round = Integer.parseInt(line);
+				while(reader.ready()) {
+					line = reader.readLine().trim();
+					if(line.toLowerCase().contains("[in]") || line.toLowerCase().contains("[out]")) {
+						break;
+					} else if(line.equalsIgnoreCase("")) {
+						// ignore blank lines
+					} else {
+						round = Integer.parseInt(line);
+					}
+				}
 				loggerUtils.log("info", "Selections for round: {}", round);
 			}
 			
@@ -398,7 +430,7 @@ public class EmailSelectionsHandler {
 		} else if(validationResult.lockedOut) {
 			messageBody = messageBody + "\t- The round you have in your selections.txt is in progress and doesn't allow more selections\n";
 		} else if(validationResult.unknownError) {
-			messageBody = messageBody + "\t- Some exception occured follow up email to xdfl google group.\n";
+			messageBody = messageBody + "\t- Some exception occured follow up with email to xdfl google group.\n";
 		} else if(!validationResult.teamPlayerCheckOk) {
 			messageBody = messageBody + "\t- The ins and/or outs numbers sent are not correct\n";
 		} else {

@@ -1,6 +1,7 @@
 package net.dflmngr.model.service;
 
 import java.util.List;
+import java.util.Map;
 
 import net.dflmngr.model.entity.DflSelectedPlayer;
 import net.dflmngr.model.entity.keys.DflSelectedPlayerPK;
@@ -10,4 +11,5 @@ public interface DflSelectedTeamService extends GenericService<DflSelectedPlayer
 	public List<DflSelectedPlayer> getSelectedTeamForRound(int round, String teamCode);
 	public void replaceAllForRound(int round, List<DflSelectedPlayer> selectedTeam);
 	public void replaceTeamForRound(int round, String teamCode, List<DflSelectedPlayer> selectedTeam);
+	public Map<Integer, DflSelectedPlayer> getForRoundWithKey(int round);
 }

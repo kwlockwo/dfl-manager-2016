@@ -27,5 +27,18 @@ public class DflPlayerDaoImpl extends GenericDaoImpl<DflPlayer, Integer> impleme
 		}
 		
 		return player;
-	}	
+	}
+	
+	public List<DflPlayer> findAdamGoodesEligible() {
+		criteriaBuilder = entityManager.getCriteriaBuilder();
+		criteriaQuery = criteriaBuilder.createQuery(entityClass);
+		entity = criteriaQuery.from(entityClass);
+		
+		Predicate equals = criteriaBuilder.equal(entity.get(DflPlayer_.isFirstYear), true);
+		
+		criteriaQuery.where(criteriaBuilder.and(equals));
+		List<DflPlayer> entitys = entityManager.createQuery(criteriaQuery).getResultList();
+		
+		return entitys;
+	}
 }

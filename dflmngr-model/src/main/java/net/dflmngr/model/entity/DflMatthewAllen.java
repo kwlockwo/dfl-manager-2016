@@ -1,5 +1,7 @@
 package net.dflmngr.model.entity;
 
+import java.util.Comparator;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -9,7 +11,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "dfl_matthew_allen")
-public class DflMatthewAllen {
+public class DflMatthewAllen implements Comparator<DflMatthewAllen>, Comparable<DflMatthewAllen> {
 	
 	@Id @GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="id")
@@ -19,9 +21,10 @@ public class DflMatthewAllen {
 	private int game;
 	
 	@Column(name="player_id")
-	private int playderId;
+	private int playerId;
 	
 	private int votes;
+	private int total;
 	
 	public int getId() {
 		return id;
@@ -41,11 +44,11 @@ public class DflMatthewAllen {
 	public void setGame(int game) {
 		this.game = game;
 	}
-	public int getPlayderId() {
-		return playderId;
+	public int getPlayerId() {
+		return playerId;
 	}
-	public void setPlayderId(int playderId) {
-		this.playderId = playderId;
+	public void setPlayerId(int playerId) {
+		this.playerId = playerId;
 	}
 	public int getVotes() {
 		return votes;
@@ -53,11 +56,17 @@ public class DflMatthewAllen {
 	public void setVotes(int votes) {
 		this.votes = votes;
 	}
+	public int getTotal() {
+		return total;
+	}
+	public void setTotal(int total) {
+		this.total = total;
+	}
 	
 	@Override
 	public String toString() {
-		return "DflMatthewAllen [id=" + id + ", round=" + round + ", game=" + game + ", playderId=" + playderId
-				+ ", votes=" + votes + "]";
+		return "DflMatthewAllen [id=" + id + ", round=" + round + ", game=" + game + ", playerId=" + playerId
+				+ ", votes=" + votes + ", total=" + total + "]";
 	}
 	
 	@Override
@@ -66,8 +75,9 @@ public class DflMatthewAllen {
 		int result = 1;
 		result = prime * result + game;
 		result = prime * result + id;
-		result = prime * result + playderId;
+		result = prime * result + playerId;
 		result = prime * result + round;
+		result = prime * result + total;
 		result = prime * result + votes;
 		return result;
 	}
@@ -84,12 +94,24 @@ public class DflMatthewAllen {
 			return false;
 		if (id != other.id)
 			return false;
-		if (playderId != other.playderId)
+		if (playerId != other.playerId)
 			return false;
 		if (round != other.round)
+			return false;
+		if (total != other.total)
 			return false;
 		if (votes != other.votes)
 			return false;
 		return true;
+	}
+	
+	@Override
+	public int compareTo(DflMatthewAllen o) {
+		return this.getTotal() > o.getTotal() ? 1 : (this.getTotal() < o.getTotal() ? -1 : 0);
+	}
+	
+	@Override
+	public int compare(DflMatthewAllen o1, DflMatthewAllen o2) {
+		return o1.getTotal() > o2.getTotal() ? 1 : (o2.getTotal() < o2.getTotal() ? -1 : 0);
 	}
 }

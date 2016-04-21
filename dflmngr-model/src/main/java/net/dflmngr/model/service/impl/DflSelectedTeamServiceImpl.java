@@ -1,6 +1,8 @@
 package net.dflmngr.model.service.impl;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import net.dflmngr.model.dao.DflSelectedPlayerDao;
 import net.dflmngr.model.dao.impl.DflSelectedPlayerDaoImpl;
@@ -57,5 +59,16 @@ public class DflSelectedTeamServiceImpl extends GenericServiceImpl<DflSelectedPl
 		insertAll(selectedTeam, true);
 		
 		dao.commit();
+	}
+	
+	public Map<Integer, DflSelectedPlayer> getForRoundWithKey(int round) {
+		Map<Integer, DflSelectedPlayer> selectedPlayersWithKey = new HashMap<>();
+		List<DflSelectedPlayer> selectedPlayers = getAllForRound(round);
+		
+		for(DflSelectedPlayer player : selectedPlayers) {
+			selectedPlayersWithKey.put(player.getPlayerId(), player);
+		}
+		
+		return selectedPlayersWithKey;
 	}
 }

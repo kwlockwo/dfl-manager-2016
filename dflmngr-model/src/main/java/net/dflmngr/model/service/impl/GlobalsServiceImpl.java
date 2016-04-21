@@ -66,6 +66,19 @@ public class GlobalsServiceImpl extends GenericServiceImpl<Globals, GlobalsPK>im
 		return codes;
 	}
 	
+	public Map<String, String> getGroupValues(String groupCode) {
+		
+		Map<String, String> codesValues = new HashMap<>();
+		
+		List<Globals> globalsList = dao.findCodesForGroup(groupCode);
+		
+		for(Globals globals : globalsList) {
+			codesValues.put(globals.getCode(), globals.getValue());
+		}
+		
+		return codesValues;
+	}
+	
 	public String getCurrentYear() {
 		
 		String currentYear = "";
@@ -256,6 +269,49 @@ public class GlobalsServiceImpl extends GenericServiceImpl<Globals, GlobalsPK>im
 		currentRound = getValue(code, groupCode);
 		
 		return currentRound;
+	}
+	
+	public String getBrowserPath() {
+		
+		String browserPath = "";
+		String code = "browserPath";
+		String groupCode = "dflRef";
+		
+		browserPath = getValue(code, groupCode);
+		
+		return browserPath;
+	}
+	
+	public int getWebdriverWait() {
+		
+		int webriverWait = 0;
+		String code = "webdriverWait";
+		String groupCode = "dflRef";
+		
+		webriverWait = Integer.parseInt(getValue(code, groupCode));
+		
+		return webriverWait;
+	}
+	
+	public int getWebdriverTimeout() {
+		
+		int webdriverTimeout = 0;
+		String code = "webdriverTimeout";
+		String groupCode = "dflRef";
+		
+		webdriverTimeout = Integer.parseInt(getValue(code, groupCode));
+		
+		return webdriverTimeout;
+	}
+	
+	public Map<String, String> getDraftOrder() {
+		
+		Map<String, String> draftOrder = null;
+		String groupCode = "draftOrder";
+		
+		draftOrder = getGroupValues(groupCode);
+		
+		return draftOrder;
 	}
 
 }

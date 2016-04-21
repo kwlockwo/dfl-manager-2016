@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,6 +83,9 @@ public class ResultsReport {
 	String[] ladderHeader = {"Teeam", "W", "L", "D", "For", "Ave", "Agst", "Av", "Pts", "%"};
 	String[] liveLadderHeader = {"Teeam", "Pts", "%"};
 	
+	Map<String, Integer> playersPlayedCount;
+	Map<String, Integer> selectedPlayersCount;
+	
 	public ResultsReport() {
 		rawPlayerStatsService = new RawPlayerStatsServiceImpl();
 		dflPlayerScoresService = new DflPlayerScoresServiceImpl();
@@ -93,6 +97,9 @@ public class ResultsReport {
 		dflPlayerService = new DflPlayerServiceImpl();
 		aflFixtureService = new AflFixtureServiceImpl();
 		dflLadderService = new DflLadderServiceImpl();
+		
+		playersPlayedCount = new HashMap<>();
+		selectedPlayersCount = new HashMap<>();
 	}
 	
 	public void configureLogging(String mdcKey, String loggerName, String logfile) {
@@ -296,6 +303,8 @@ public class ResultsReport {
 		
 		List<String> playedTeams = aflFixtureService.getAflTeamsPlayedForRound(fixture.getRound());
 		
+		int playersPlayed = 0;
+		
 		for(DflSelectedPlayer selectedPlayer : selectedHomeTeam) {
 			ResultsFixtureTabTeamStruct playerRec = new ResultsFixtureTabTeamStruct();
 			
@@ -321,6 +330,7 @@ public class ResultsReport {
 				
 				if(playedTeams.contains(DflmngrUtils.dflAflTeamMap.get(player.getAflClub()))) {
 					playerRec.setScore("dnp");
+					playersPlayed++;
 				} else {
 					playerRec.setScoreInt(0);
 				}
@@ -338,10 +348,16 @@ public class ResultsReport {
 				playerRec.setGoals(stats.getGoals());
 				playerRec.setBehinds(stats.getBehinds());
 				playerRec.setScoreInt(score.getScore());
+				
+				playersPlayed++;
 			}
 			
 			homeTeamData.add(playerRec);
 		}
+		
+		playersPlayedCount.put(fixture.getHomeTeam(), playersPlayed);
+		selectedPlayersCount.put(fixture.getHomeTeam(), selectedHomeTeam.size());
+		playersPlayed = 0;
 		
 		for(DflSelectedPlayer selectedPlayer : selectedAwayTeam) {
 			ResultsFixtureTabTeamStruct playerRec = new ResultsFixtureTabTeamStruct();
@@ -368,6 +384,7 @@ public class ResultsReport {
 				
 				if(playedTeams.contains(DflmngrUtils.dflAflTeamMap.get(player.getAflClub()))) {
 					playerRec.setScore("dnp");
+					playersPlayed++;
 				} else {
 					playerRec.setScoreInt(0);
 				}
@@ -385,10 +402,15 @@ public class ResultsReport {
 				playerRec.setGoals(stats.getGoals());
 				playerRec.setBehinds(stats.getBehinds());
 				playerRec.setScoreInt(score.getScore());
+				
+				playersPlayed++;
 			}
 			
 			awayTeamData.add(playerRec);
 		}
+		
+		playersPlayedCount.put(fixture.getAwayTeam(), playersPlayed);
+		selectedPlayersCount.put(fixture.getAwayTeam(), selectedAwayTeam.size());
 		
 		Collections.sort(homeTeamData);
 		Collections.sort(awayTeamData);
@@ -585,9 +607,13 @@ public class ResultsReport {
 		for(DflFixture fixture : roundFixtures) {
 			DflTeam homeTeam = dflTeamService.get(fixture.getHomeTeam());
 			int homeTeamScore = teamScores.get(fixture.getHomeTeam()).getScore();
+			int homePlayersPlayed = playersPlayedCount.get(fixture.getHomeTeam());
+			int homeSelectedSize = selectedPlayersCount.get(fixture.getHomeTeam());
 			
 			DflTeam awayTeam = dflTeamService.get(fixture.getAwayTeam());
 			int awayTeamScore = teamScores.get(fixture.getAwayTeam()).getScore();
+			int awayPlayersPlayed = playersPlayedCount.get(fixture.getAwayTeam());
+			int awaySelectedSize = selectedPlayersCount.get(fixture.getAwayTeam());
 			
 			String resultString = "";
 			if(homeTeamScore > awayTeamScore) {
@@ -596,7 +622,11 @@ public class ResultsReport {
 				resultString = " lead by ";
 			}
 			
-			body = body + "<li>" + homeTeam.getName() + " " + homeTeamScore + resultString + awayTeam.getName() + " " + awayTeamScore + "</li>\n";
+			body = body + "<li>" 
+				   + homeTeam.getName() + " " + homeTeamScore + " (" + homePlayersPlayed + "/" + homeSelectedSize + " used)"
+				   + resultString 
+				   + awayTeam.getName() + " " + awayTeamScore + " (" + awayPlayersPlayed + "/" + awaySelectedSize + " used)"
+				   + "</li>\n";
 		}
 		
 		body = body + "</ul></p>\n";

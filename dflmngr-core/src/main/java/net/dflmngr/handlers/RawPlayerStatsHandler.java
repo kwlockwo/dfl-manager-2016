@@ -1,5 +1,6 @@
 package net.dflmngr.handlers;
 
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,7 +16,9 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.firefox.FirefoxBinary;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxProfile;
 
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.entity.AflFixture;
@@ -167,6 +170,10 @@ public class RawPlayerStatsHandler {
 		String year = globalsService.getCurrentYear();
 		String statsUrl = globalsService.getAflStatsUrl();
 		
+		String browserPath = globalsService.getBrowserPath();
+		int webdriverWait = globalsService.getWebdriverWait();
+		int webdriberTimeout = globalsService.getWebdriverTimeout();
+		
 		for(AflFixture fixture : fixturesToProcess) {
 			String homeTeam = fixture.getHomeTeam();
 			String awayTeam = fixture.getAwayTeam();
@@ -174,12 +181,14 @@ public class RawPlayerStatsHandler {
 			String fullStatsUrl =  statsUrl + "/" + year + "/" + round + "/" + homeTeam.toLowerCase() + "-v-" + awayTeam.toLowerCase();
 			loggerUtils.log("info", "AFL stats URL: {}", fullStatsUrl);
 
-			WebDriver driver = new FirefoxDriver();
-			//driver = new PhantomJSDriver();
+			File browserBinary = new File(browserPath);
+			FirefoxBinary ffBinary = new FirefoxBinary(browserBinary);
+			FirefoxProfile firefoxProfile = new FirefoxProfile();
+			WebDriver driver = new FirefoxDriver(ffBinary, firefoxProfile);
 			
-			driver.manage().timeouts().implicitlyWait(20, TimeUnit.SECONDS);
-			driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.SECONDS);
-			driver.manage().window().setSize(new Dimension(1024, 768));
+			driver.manage().timeouts().implicitlyWait(webdriverWait, TimeUnit.SECONDS);
+			driver.manage().timeouts().pageLoadTimeout(webdriberTimeout, TimeUnit.SECONDS);
+			//driver.manage().window().setSize(new Dimension(1024, 768));
 				
 			driver.navigate().to(fullStatsUrl);
 						

@@ -24,4 +24,8 @@ public interface GlobalsService extends GenericService<Globals, GlobalsPK> {
 	public String getEmailerRoot();
 	public String getTeamEmail(String teamCode);
 	public String getCurrentRound();
+	public String getBrowserPath();
+	public int getWebdriverWait();
+	public int getWebdriverTimeout();
+	public Map<String, String> getDraftOrder();
 }

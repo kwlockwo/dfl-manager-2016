@@ -1,5 +1,7 @@
 package net.dflmngr.model.service.impl;
 
+import java.util.List;
+
 import net.dflmngr.model.dao.DflPlayerDao;
 import net.dflmngr.model.dao.impl.DflPlayerDaoImpl;
 import net.dflmngr.model.entity.DflPlayer;
@@ -18,5 +20,11 @@ public class DflPlayerServiceImpl extends GenericServiceImpl<DflPlayer, Integer>
 		DflPlayer dflPlayer = null;
 		dflPlayer = dao.findByAflPlayerId(aflPlayerId);
 		return dflPlayer;
+	}
+	
+	public List<DflPlayer> getAdamGoodesEligible() {
+		List<DflPlayer> adamGoodesEligible = null;
+		adamGoodesEligible = dao.findAdamGoodesEligible();
+		return adamGoodesEligible;
 	}
 }

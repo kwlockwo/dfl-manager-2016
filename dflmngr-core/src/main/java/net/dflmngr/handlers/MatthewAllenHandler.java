@@ -77,6 +77,7 @@ public class MatthewAllenHandler {
 			loggerUtils.log("info", "MatthewAllenHandler excuting, rount={} ....", round);
 			
 			List<DflFixture> roundFixtures = dflFixtureService.getFixturesForRound(round);
+			dflMatthewAllenService.deleteForRound(round);
 			
 			loggerUtils.log("info", "Round {} ....", round);
 			for(DflFixture game : roundFixtures) {
@@ -130,7 +131,7 @@ public class MatthewAllenHandler {
 				lastVoteGetter = playerScore;
 				vote.setRound(round);
 				vote.setGame(game);
-				vote.setPlayderId(playerScore.getPlayerId());
+				vote.setPlayerId(playerScore.getPlayerId());
 				vote.setVotes(3);
 				voteValue--;
 			} else if(voteValue == 2) {
@@ -139,14 +140,14 @@ public class MatthewAllenHandler {
 					lastVoteGetter = playerScore;
 					vote.setRound(round);
 					vote.setGame(game);
-					vote.setPlayderId(playerScore.getPlayerId());
+					vote.setPlayerId(playerScore.getPlayerId());
 					vote.setVotes(3);
 				} else {
 					loggerUtils.log("info", "2 votes .... {}-{}: {} {}", player.getPlayerId(), playerScore.getTeamCode(), player.getFirstName(), player.getLastName());
 					lastVoteGetter = playerScore;
 					vote.setRound(round);
 					vote.setGame(game);
-					vote.setPlayderId(playerScore.getPlayerId());
+					vote.setPlayerId(playerScore.getPlayerId());
 					vote.setVotes(2);
 					voteValue--;
 				}
@@ -156,14 +157,14 @@ public class MatthewAllenHandler {
 					lastVoteGetter = playerScore;
 					vote.setRound(round);
 					vote.setGame(game);
-					vote.setPlayderId(playerScore.getPlayerId());
+					vote.setPlayerId(playerScore.getPlayerId());
 					vote.setVotes(2);
 				} else {
 					loggerUtils.log("info", "1 vote .... {}-{}: {} {}", player.getPlayerId(), playerScore.getTeamCode(), player.getFirstName(), player.getLastName());
 					lastVoteGetter = playerScore;
 					vote.setRound(round);
 					vote.setGame(game);
-					vote.setPlayderId(playerScore.getPlayerId());
+					vote.setPlayerId(playerScore.getPlayerId());
 					vote.setVotes(1);
 					voteValue--;
 				}
@@ -173,7 +174,7 @@ public class MatthewAllenHandler {
 					lastVoteGetter = playerScore;
 					vote.setRound(round);
 					vote.setGame(game);
-					vote.setPlayderId(playerScore.getPlayerId());
+					vote.setPlayerId(playerScore.getPlayerId());
 					vote.setVotes(1);
 				} else {
 					voteValue--;
@@ -183,6 +184,15 @@ public class MatthewAllenHandler {
 			if(voteValue == -1) {
 				break;
 			}
+			
+			DflMatthewAllen lastVotes = dflMatthewAllenService.getLastVotes(playerScore.getPlayerId());
+			
+			if(lastVotes == null) {
+				vote.setTotal(vote.getVotes());
+			} else {
+				vote.setTotal(lastVotes.getTotal() + vote.getVotes());
+			}
+			
 			votes.add(vote);
 		}
 		
