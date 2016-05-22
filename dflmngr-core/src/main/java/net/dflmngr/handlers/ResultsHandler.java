@@ -53,29 +53,51 @@ public class ResultsHandler {
 				this.emailOverride = emailOverride;
 			}
 			
+			boolean statsLoaded = false;
+			
 			if(!skipStats) {
 				loggerUtils.log("info", "Getting stats");
 				RawPlayerStatsHandler statsHandler = new RawPlayerStatsHandler();
 				statsHandler.configureLogging(mdcKey, loggerName, logfile);
-				statsHandler.execute(round);
+				
+				int tries = 1;
+				
+				while(!statsLoaded) {
+					loggerUtils.log("info", "Attempt: " + tries);
+					statsLoaded = statsHandler.execute(round);
+					if(tries > 5) {
+						break;
+					} else {
+						tries++;
+					}
+				}
+				if(statsLoaded) {
+					loggerUtils.log("info", "Stats Loaded");
+				}
+			} else {
+				statsLoaded = true;
 			}
 			
-			loggerUtils.log("info", "Calculating scores");
-			ScoresCalculatorHandler scoresCalculator = new ScoresCalculatorHandler();
-			scoresCalculator.configureLogging(mdcKey, loggerName, logfile);
-			scoresCalculator.execute(round);
-			
-			loggerUtils.log("info", "Calculating Ladder");
-			LadderCalculatorHandler ladderCalculator = new LadderCalculatorHandler();
-			ladderCalculator.configureLogging(mdcKey, loggerName, logfile);
-			ladderCalculator.execute(round);
-			
-			loggerUtils.log("info", "Writing report");
-			ResultsReport resultsReport = new ResultsReport();
-			resultsReport.configureLogging(mdcKey, loggerName, logfile);
-			resultsReport.execute(round, isFinal, emailOverride);
-			
-			loggerUtils.log("info", "ResultsHandler complete");
+			if(statsLoaded) {
+				loggerUtils.log("info", "Calculating scores");
+				ScoresCalculatorHandler scoresCalculator = new ScoresCalculatorHandler();
+				scoresCalculator.configureLogging(mdcKey, loggerName, logfile);
+				scoresCalculator.execute(round);
+				
+				loggerUtils.log("info", "Calculating Ladder");
+				LadderCalculatorHandler ladderCalculator = new LadderCalculatorHandler();
+				ladderCalculator.configureLogging(mdcKey, loggerName, logfile);
+				ladderCalculator.execute(round);
+				
+				loggerUtils.log("info", "Writing report");
+				ResultsReport resultsReport = new ResultsReport();
+				resultsReport.configureLogging(mdcKey, loggerName, logfile);
+				resultsReport.execute(round, isFinal, emailOverride);
+				
+				loggerUtils.log("info", "ResultsHandler complete");
+			} else {
+				loggerUtils.log("info", "No stats loaded nothing to do.");
+			}
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);
 		}

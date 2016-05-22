@@ -313,5 +313,15 @@ public class GlobalsServiceImpl extends GenericServiceImpl<Globals, GlobalsPK>im
 		
 		return draftOrder;
 	}
-
+	
+	public void setCurrentRound(int newRound) {
+		dao.beginTransaction();
+		GlobalsPK pk = new GlobalsPK();
+		pk.setCode("currentRound");
+		pk.setGroupCode("dflRef");
+		Globals currentRound = dao.findById(pk);
+		currentRound.setValue(Integer.toString(newRound));
+		dao.persist(currentRound);
+		dao.commit();
+	}
 }

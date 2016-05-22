@@ -69,7 +69,9 @@ public class RawPlayerStatsHandler {
 		isExecutable = true;
 	}
 	
-	public void execute(int round) {
+	public boolean execute(int round) {
+		
+		boolean success = false;
 		
 		try {
 			if(!isExecutable) {
@@ -128,9 +130,13 @@ public class RawPlayerStatsHandler {
 			globalsService.close();
 			rawPlayerStatsService.close();
 			
+			success = true;
+			
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);
 		}
+		
+		return success;
 	}
 	
 	private List<RawPlayerStats> processFixtures(int round, List<AflFixture> fixturesToProcess, Set<String> teamsToProcess) throws Exception {
@@ -186,15 +192,22 @@ public class RawPlayerStatsHandler {
 			FirefoxProfile firefoxProfile = new FirefoxProfile();
 			WebDriver driver = new FirefoxDriver(ffBinary, firefoxProfile);
 			
-			driver.manage().timeouts().implicitlyWait(webdriverWait, TimeUnit.SECONDS);
+			//driver.manage().timeouts().implicitlyWait(webdriverWait, TimeUnit.SECONDS);
 			driver.manage().timeouts().pageLoadTimeout(webdriberTimeout, TimeUnit.SECONDS);
 			//driver.manage().window().setSize(new Dimension(1024, 768));
-				
-			driver.navigate().to(fullStatsUrl);
+			
+			try {
+				driver.get(fullStatsUrl);
+			} catch (Exception ex) {
+				if(driver.findElements(By.cssSelector("a[href='#full-time-stats']")).isEmpty()) {
+					driver.quit();
+					throw new Exception("Error Loading page, URL:"+webdriberTimeout, ex);
+				}
+			}
 						
-			if(driver.findElement(By.id("homeTeam-advanced")).isDisplayed()) {
-				System.out.println("Displayed");
-			}		
+			//if(driver.findElement(By.id("homeTeam-advanced")).isDisplayed()) {
+			//	System.out.println("Displayed");
+			//}		
 			
 			if(teamsToProcess.contains(homeTeam)) {
 				playerStats.addAll(altGetStats(round, homeTeam, "h", driver));
@@ -203,7 +216,7 @@ public class RawPlayerStatsHandler {
 				playerStats.addAll(altGetStats(round, awayTeam, "a", driver));
 			}
 			
-			driver.close();
+			driver.quit();
 		}
 		
 		return playerStats;

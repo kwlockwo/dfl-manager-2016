@@ -174,6 +174,7 @@ public class EmailSelectionsHandler {
 		
 						if (disposition != null && (disposition.equalsIgnoreCase(Part.ATTACHMENT) || disposition.equalsIgnoreCase(Part.INLINE))) {
 							String attachementName = part.getFileName();
+							loggerUtils.log("info", "Attachement found, name={}", attachementName);
 							if(attachementName.equals("selections.txt")) {
 								loggerUtils.log("info", "Message from {}, has selection attachment", from);
 								selectionsFileAttached = true;
@@ -182,7 +183,7 @@ public class EmailSelectionsHandler {
 								//this.responses.put(key, true);
 								validationResult.setFrom(from);
 								validationResults.add(validationResult);
-								loggerUtils.log("info", "Message from {} ... SUCCESS!", from);
+								loggerUtils.log("info", "Message from {} handled with ... SUCCESS!", from);
 							} else if (attachementName.equalsIgnoreCase("WINMAIL.DAT") || attachementName.equalsIgnoreCase("ATT00001.DAT")) {
 								loggerUtils.log("info", "Message from {}, is a TNEF message", from);
 								validationResult = handleTNEFMessage(part.getInputStream(), from, messages[i].getReceivedDate());
@@ -190,7 +191,7 @@ public class EmailSelectionsHandler {
 								//this.responses.put(key, true);
 								validationResult.setFrom(from);
 								validationResults.add(validationResult);
-								loggerUtils.log("info", "Message from {} ... SUCCESS!", from);
+								loggerUtils.log("info", "Message from {} handled with ... SUCCESS!", from);
 							}
 						}
 							
@@ -198,13 +199,16 @@ public class EmailSelectionsHandler {
 				}
 				if(validationResult == null) {
 					//this.responses.put(from, false);
+					loggerUtils.log("info", "Validation is still NULL");
 					validationResult = new SelectedTeamValidation();
 					if(selectionsFileAttached) {
 						validationResult.unknownError = true;
 						validationResult.selectionFileMissing = false;
 						validationResult.roundCompleted = false;
 						validationResult.lockedOut = false;
+						loggerUtils.log("info", "Selection file was found, but there was some error.");
 					} else {
+						loggerUtils.log("info", "Selection file is missing.");
 						validationResult.selectionFileMissing = true;
 					}
 					validationResult.setFrom(from);
@@ -212,10 +216,12 @@ public class EmailSelectionsHandler {
 					loggerUtils.log("info", "Message from {} ... FAILURE!", from);
 				} else {
 					if(validationResult.isValid()) {
-						loggerUtils.log("info", "Saving ins and outs to DB", from);
+						loggerUtils.log("info", "Team selection is VALID.... Saving ins and outs to DB");
 						TeamSelectionLoaderHandler selectionsLoader = new TeamSelectionLoaderHandler();
 						selectionsLoader.configureLogging(mdcKey, loggerName, logfile);
 						selectionsLoader.execute(validationResult.getTeamCode(), validationResult.getRound(), validationResult.getInsAndOuts().get("in"), validationResult.getInsAndOuts().get("out"));
+					} else {
+						loggerUtils.log("info", "Team selection is invalid ... No changes made.");
 					}
 				}
 			} catch (Exception ex) {

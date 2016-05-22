@@ -103,6 +103,8 @@ public class EndRoundHandler {
 			
 			createAndSendEmail(round, matthewAllenStandings, adamGoodesStandings, topFirstYears, callumChambersStandings);
 			
+			globalsService.setCurrentRound(round+1);
+			
 			dflMatthewAllenService.close();
 			globalsService.close();
 			dflPlayerService.close();

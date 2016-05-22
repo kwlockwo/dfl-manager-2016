@@ -61,9 +61,13 @@ public class SelectedTeamValidationHandler {
 				loggerUtils.log("info", "Default logging configured");
 			}
 			
+			loggerUtils.log("info", "Validating selectionds for teamCode={}; round={};", teamCode, round);
+			
 			int currentRound = Integer.parseInt(globalsService.getCurrentRound());
 			DflRoundInfo roundInfo = dflRoundInfoService.get(round);
 			Date lockoutTime = roundInfo.getHardLockoutTime();
+			
+			loggerUtils.log("info", "DFL round={}; Lockout time={};", currentRound, lockoutTime);
 			
 			List<DflSelectedPlayer> selectedTeam = null;
 			
@@ -71,14 +75,17 @@ public class SelectedTeamValidationHandler {
 				validationResult = new SelectedTeamValidation();
 				validationResult.selectionFileMissing = false;
 				validationResult.roundCompleted = true;
+				loggerUtils.log("info", "Team invalid round is completed");
 			} else if(receivedDate.after(lockoutTime)) {
 				validationResult = new SelectedTeamValidation();
 				validationResult.selectionFileMissing = false;
 				validationResult.roundCompleted = false;
 				validationResult.lockedOut = true;
+				loggerUtils.log("info", "Team invalid email recived after lockout, recived date={}", receivedDate);
 			} else {
 				
 				if(round == 1) {
+					loggerUtils.log("info", "Round 1 only ins.");
 					List<Integer> ins = insAndOuts.get("in");
 					
 					selectedTeam = new ArrayList<>();
@@ -89,6 +96,7 @@ public class SelectedTeamValidationHandler {
 							validationResult.selectionFileMissing = false;
 							validationResult.roundCompleted = false;
 							validationResult.lockedOut = false;
+							loggerUtils.log("info", "Selected player outside player range, teamPlayerId={}.", in);
 							break;
 						} else {
 							DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
@@ -98,6 +106,7 @@ public class SelectedTeamValidationHandler {
 							selectedPlayer.setTeamPlayerId(in);
 							
 							selectedTeam.add(selectedPlayer);
+							loggerUtils.log("info", "Added selectedPlayer={}.", selectedPlayer);
 						}
 					}
 				} else {
@@ -110,6 +119,7 @@ public class SelectedTeamValidationHandler {
 						if(in < 1 || in > 45) {
 							validationResult = new SelectedTeamValidation();
 							validationResult.selectionFileMissing = false;
+							loggerUtils.log("info", "Selected player outside player range, teamPlayerId={}.", in);
 							break;
 						} else {
 							DflSelectedPlayer selectedPlayer = new DflSelectedPlayer();
@@ -119,6 +129,7 @@ public class SelectedTeamValidationHandler {
 							selectedPlayer.setTeamPlayerId(in);
 							
 							selectedTeam.add(selectedPlayer);
+							loggerUtils.log("info", "Added selectedPlayer={}.", selectedPlayer);
 						}
 					}
 					
@@ -128,11 +139,13 @@ public class SelectedTeamValidationHandler {
 						if(out < 1 || out > 45) {
 							validationResult = new SelectedTeamValidation();
 							validationResult.selectionFileMissing = false;
+							loggerUtils.log("info", "Dropped player outside player range, teamPlayerId={}.", out);
 							break;
 						} else {
 							for(DflSelectedPlayer selectedPlayer : selectedTeam) {
 								if(selectedPlayer.getTeamPlayerId() == out) {
 									playersToRemove.add(selectedPlayer);
+									loggerUtils.log("info", "Removing selectedPlayer={}.", selectedPlayer);
 								}
 							}
 						}
@@ -143,12 +156,15 @@ public class SelectedTeamValidationHandler {
 			}
 			
 			if(validationResult == null) {
+				loggerUtils.log("info", "Pre checks PASSED, validating selected team");
 				validationResult = validateTeam(teamCode, selectedTeam);
 			}
 			
 			validationResult.setRound(round);
 			validationResult.setTeamCode(teamCode);
 			validationResult.setInsAndOuts(insAndOuts);
+			
+			loggerUtils.log("info", "Validation result={}", validationResult);
 			
 			dflSelectedTeamService.close();
 			dflTeamPlayerService.close();
@@ -206,6 +222,9 @@ public class SelectedTeamValidationHandler {
 					break;
 			}
 		}
+		
+		loggerUtils.log("info", "Position counts: ffCount={}; fwdCount={}; midCount={}; defCount={}; fbCount={}; rckCount={};",
+						ffCount, fwdCount, midCount, defCount, fbCount, rckCount);
 			
 		if(ffCount <= 2) {
 			validationResult.ffCheckOk = true;
@@ -245,10 +264,12 @@ public class SelectedTeamValidationHandler {
 			benchCount++;
 		}
 		
+		loggerUtils.log("info", "Bench count={};", benchCount);
+		
 		if(benchCount <= 4) {
 			validationResult.benchCheckOk = true;
 		}
-			
+		
 		return validationResult;
 	}
 }
