@@ -24,10 +24,16 @@ public class LoggingUtils {
 		
 		MDC.put(loggerKey, logFileBase);
 		
+		String callingClass = Thread.currentThread().getStackTrace()[2].getClassName();
+		String callingMethod = Thread.currentThread().getStackTrace()[2].getMethodName();
+		int lineNo = Thread.currentThread().getStackTrace()[2].getLineNumber();
+		
+		String loggerMsg = "[" + callingClass + "." +  callingMethod + "(Line:" + lineNo +")] - " + msg;
+		
 		try {
 			switch (level) {
-				case "info" : logger.info(msg, arguments); break;
-				case "error" : logger.error(msg, arguments);
+				case "info" : logger.info(loggerMsg, arguments); break;
+				case "error" : logger.error(loggerMsg, arguments);
 			}
 		} catch (Exception ex) {
 			logger.error("Error in ... ", ex);

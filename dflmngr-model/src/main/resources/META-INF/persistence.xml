@@ -29,6 +29,8 @@
 		<class>net.dflmngr.model.entity.DflTeamScores</class>
 		<class>net.dflmngr.model.entity.DflLadder</class>
 		<class>net.dflmngr.model.entity.DflMatthewAllen</class>
+		<class>net.dflmngr.model.entity.DflTeamPredictedScores</class>
+		<class>net.dflmngr.model.entity.DflPlayerPredictedScores</class>
 
 		<properties>
 			<!-- <property name="javax.persistence.jdbc.password" value="${db.user}" />

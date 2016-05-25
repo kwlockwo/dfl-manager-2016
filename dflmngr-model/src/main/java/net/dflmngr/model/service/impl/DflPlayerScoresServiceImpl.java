@@ -1,5 +1,6 @@
 package net.dflmngr.model.service.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,5 +65,46 @@ public class DflPlayerScoresServiceImpl extends GenericServiceImpl<DflPlayerScor
 		insertAll(playerScores, true);
 		
 		dao.commit();
+	}
+	
+	public Map<Integer, List<DflPlayerScores>> getAllWithKey() {
+		Map<Integer, List<DflPlayerScores>> playerScoresWithKey = new HashMap<>();
+		List<DflPlayerScores> scores = dao.findAll();
+		
+		for(DflPlayerScores playerScore : scores) {
+			List<DflPlayerScores> playerScores = null;
+			if(playerScoresWithKey.containsKey(playerScore.getPlayerId())) {
+				playerScores = playerScoresWithKey.get(playerScore.getPlayerId());
+			} else {
+				playerScores = new ArrayList<>();
+			}
+			
+			playerScores.add(playerScore);
+			playerScoresWithKey.put(playerScore.getPlayerId(), playerScores);
+		}
+		
+		return playerScoresWithKey;
+	}
+	
+	public Map<Integer, List<DflPlayerScores>> getUptoRoundWithKey(int round) {
+		Map<Integer, List<DflPlayerScores>> playerScoresWithKey = new HashMap<>();
+		
+		for(int i = 1; i < round; i++) {
+			List<DflPlayerScores> scores = getForRound(i);
+			
+			for(DflPlayerScores playerScore : scores) {
+				List<DflPlayerScores> playerScores = null;
+				if(playerScoresWithKey.containsKey(playerScore.getPlayerId())) {
+					playerScores = playerScoresWithKey.get(playerScore.getPlayerId());
+				} else {
+					playerScores = new ArrayList<>();
+				}
+				
+				playerScores.add(playerScore);
+				playerScoresWithKey.put(playerScore.getPlayerId(), playerScores);
+			}
+		}
+		
+		return playerScoresWithKey;
 	}
 }

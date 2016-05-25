@@ -12,4 +12,6 @@ public interface DflPlayerScoresService extends GenericService<DflPlayerScores, 
 	public Map<Integer, DflPlayerScores> getForRoundWithKey(int round);
 	public Map<Integer, DflPlayerScores> getForRoundAndTeamWithKey(int round, String teamCode);
 	public void replaceAllForRound(int round, List<DflPlayerScores> playerScores);
+	public Map<Integer, List<DflPlayerScores>> getAllWithKey();
+	public Map<Integer, List<DflPlayerScores>> getUptoRoundWithKey(int round);
 }

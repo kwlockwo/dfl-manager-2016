@@ -46,7 +46,7 @@ public class ResultsHandler {
 				loggerUtils.log("info", "Default logging configured");
 			}
 			
-			loggerUtils.log("info", "ResultsHandler excuting, rount={} ....", round);
+			loggerUtils.log("info", "ResultsHandler excuting, round={} ....", round);
 			
 			if(emailOverride != null && !emailOverride.equals("")) {
 				loggerUtils.log("info", "Overriding email with: {}", emailOverride);
@@ -138,43 +138,13 @@ public class ResultsHandler {
 				skipStats=true;
 			}
 			
-			/*
-			if(args.length > 3 || args.length < 2) {
-				System.out.println("usage: RawStatsReport <round> optional [Final <email> skipStats]");
-			} else {
-				
-				round = Integer.parseInt(args[0]);
-				
-				if(args.length == 2) {
-					if(args[1].equalsIgnoreCase("Final")) {
-						isFinal = true;
-					} else if(args[1].equalsIgnoreCase("skipStats")) {
-						skipStats = true;
-					} else {
-						email = args[1];
-					}
-				} else if(args.length == 3) {
-					if(args[1].equalsIgnoreCase("Final")) {
-						isFinal = true;
-						if(args[2].equalsIgnoreCase("skipStats")) {
-							skipStats = true;
-						} else {
-							email = args[2];
-						}
-					} else if(args[2].equalsIgnoreCase("Final")) {
-						isFinal = true;
-						email = args[1];
-					} else {
-						System.out.println("usage: RawStatsReport <round> optional [Final <email>]");
-					}
-				}*/
-				
-				JndiProvider.bind();
-				
-				ResultsHandler resultsHandler = new ResultsHandler();
-				resultsHandler.configureLogging("batch.name", "batch-logger", ("ResultsHandler_R" + round));
-				resultsHandler.execute(round, isFinal, email, skipStats);
-			//}
+
+			JndiProvider.bind();
+			
+			ResultsHandler resultsHandler = new ResultsHandler();
+			resultsHandler.configureLogging("batch.name", "batch-logger", ("ResultsHandler_R" + round));
+			resultsHandler.execute(round, isFinal, email, skipStats);
+
 		} catch (ParseException ex) {
 			HelpFormatter formatter = new HelpFormatter();
 			formatter.printHelp( "RawStatsReport", options );

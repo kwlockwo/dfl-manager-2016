@@ -65,6 +65,11 @@ public class StartRoundHandler {
 			
 			createTeamSelections(round);
 			
+			loggerUtils.log("info", "Creating predictions");
+			PredictionHandler predictions = new PredictionHandler();
+			predictions.configureLogging(mdcKey, loggerName, logfile);
+			predictions.execute(round);
+			
 			loggerUtils.log("info", "Creating insAndOuts Report");
 			
 			InsAndOutsReport insAndOutsReport = new InsAndOutsReport();

@@ -20,11 +20,16 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import net.dflmngr.jndi.JndiProvider;
 import net.dflmngr.logging.LoggingUtils;
 import net.dflmngr.model.DomainDecodes;
+import net.dflmngr.model.entity.DflFixture;
 import net.dflmngr.model.entity.DflTeam;
 import net.dflmngr.model.entity.InsAndOuts;
+import net.dflmngr.model.service.DflFixtureService;
+import net.dflmngr.model.service.DflTeamPredictedScoresService;
 import net.dflmngr.model.service.DflTeamService;
 import net.dflmngr.model.service.GlobalsService;
 import net.dflmngr.model.service.InsAndOutsService;
+import net.dflmngr.model.service.impl.DflFixtureServiceImpl;
+import net.dflmngr.model.service.impl.DflTeamPredictedScoresServiceImpl;
 import net.dflmngr.model.service.impl.DflTeamServiceImpl;
 import net.dflmngr.model.service.impl.GlobalsServiceImpl;
 import net.dflmngr.model.service.impl.InsAndOutsServiceImpl;
@@ -44,6 +49,8 @@ public class InsAndOutsReport {
 	GlobalsService globalsService;
 	InsAndOutsService insAndOutsService;
 	DflTeamService dflTeamService;
+	DflFixtureService dflFixtureService;
+	DflTeamPredictedScoresService dflTeamPredictedScoresService;
 	
 	String reportType;
 	
@@ -54,6 +61,8 @@ public class InsAndOutsReport {
 		globalsService = new GlobalsServiceImpl();
 		insAndOutsService = new InsAndOutsServiceImpl();
 		dflTeamService = new DflTeamServiceImpl();
+		dflFixtureService = new DflFixtureServiceImpl();
+		dflTeamPredictedScoresService = new DflTeamPredictedScoresServiceImpl();
 		isExecutable = false;
 	}
 	
@@ -127,6 +136,9 @@ public class InsAndOutsReport {
 			
 			globalsService.close();
 			insAndOutsService.close();
+			dflTeamService.close();
+			dflFixtureService.close();
+			dflTeamPredictedScoresService.close();
 			
 		} catch (Exception ex) {
 			loggerUtils.log("error", "Error in ... ", ex);
@@ -237,13 +249,15 @@ public class InsAndOutsReport {
 		
 		if(isFinal) {
 			subject = "Ins and Outs for DFL round " + round + " - FULL";
-			body = "Please find attached the full ins and outs for round " + round + ".\n\n" +
-				   "DFL Manager Admin";
+			body = "Please find attached the full ins and outs for round " + round + ".\n\n";
 		} else {
 			subject = "Ins and Outs for DFL round " + round + " - PARTIAL";
-			body = "Please find attached the partial ins and outs for round " + round + ". Team updates can still be made, further updates will be sent.\n\n" +
-				   "DFL Manager Admin";
+			body = "Please find attached the partial ins and outs for round " + round + ". Team updates can still be made, further updates will be sent.\n\n";
 		}
+		
+		body = body + "DFL Manager has made the following predictions:\n\n";
+		body = body + addPredictions(round);
+		body = body + "\nDFL Manager Admin";
 		
 		List<String> to = new ArrayList<>();
 
@@ -260,6 +274,33 @@ public class InsAndOutsReport {
 		
 		loggerUtils.log("info", "Emailing to={}; reportName={}", to, reportName);
 		EmailUtils.sendTextEmail(to, dflMngrEmail, subject, body, attachments);
+	}
+	
+	private String addPredictions(int round) {
+		
+		String predictionsStr = "";
+		
+		List<DflFixture> roundFixtures = dflFixtureService.getFixturesForRound(round);
+		
+		for(DflFixture fixture : roundFixtures) {
+			DflTeam homeTeam = dflTeamService.get(fixture.getHomeTeam());
+			int homeTeamPredictedScore = dflTeamPredictedScoresService.getTeamPredictedScoreForRound(homeTeam.getTeamCode(), round).getPredictedScore();
+			
+			DflTeam awayTeam = dflTeamService.get(fixture.getAwayTeam());
+			int awayTeamPredictedScore = dflTeamPredictedScoresService.getTeamPredictedScoreForRound(awayTeam.getTeamCode(), round).getPredictedScore();
+			
+			String resultString = "";
+			if(homeTeamPredictedScore > awayTeamPredictedScore) {
+				resultString = " to defeat ";
+			} else {
+				resultString = " to be defeated by ";
+			}
+			
+			predictionsStr = predictionsStr + 
+							 "\t" + homeTeam.getName() + " " + resultString + awayTeam.getName() + ", " + homeTeamPredictedScore + " to " + awayTeamPredictedScore + "\n";
+		}
+		
+		return predictionsStr;
 	}
 	
 	// For internal testing

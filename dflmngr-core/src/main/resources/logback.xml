@@ -15,7 +15,7 @@
 			<appender name="BATCH-${batch.name}" class="ch.qos.logback.core.FileAppender">
 				<file>${LOG.DIR}/${batch.name}-${bySecond}.log</file>
 				<encoder>
-					<pattern>%d %p %t %c [%C{0}] - %m%n</pattern>
+					<pattern>%d %p %t %c %m%n</pattern>
 				</encoder>
 			</appender>
 		</sift>
@@ -35,7 +35,7 @@
 					<maxHistory>30</maxHistory>
 				</rollingPolicy>
 				<encoder>
-					<pattern>%d %p %t %c [%C{0}] - %m%n</pattern>
+					<pattern>%d %p %t %c %m%n</pattern>
 				</encoder>
 			</appender>
 		</sift>

@@ -13,7 +13,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.firefox.FirefoxBinary;
@@ -178,7 +177,7 @@ public class RawPlayerStatsHandler {
 		
 		String browserPath = globalsService.getBrowserPath();
 		int webdriverWait = globalsService.getWebdriverWait();
-		int webdriberTimeout = globalsService.getWebdriverTimeout();
+		int webdriverTimeout = globalsService.getWebdriverTimeout();
 		
 		for(AflFixture fixture : fixturesToProcess) {
 			String homeTeam = fixture.getHomeTeam();
@@ -193,7 +192,7 @@ public class RawPlayerStatsHandler {
 			WebDriver driver = new FirefoxDriver(ffBinary, firefoxProfile);
 			
 			//driver.manage().timeouts().implicitlyWait(webdriverWait, TimeUnit.SECONDS);
-			driver.manage().timeouts().pageLoadTimeout(webdriberTimeout, TimeUnit.SECONDS);
+			driver.manage().timeouts().pageLoadTimeout(webdriverTimeout, TimeUnit.SECONDS);
 			//driver.manage().window().setSize(new Dimension(1024, 768));
 			
 			try {
@@ -201,7 +200,7 @@ public class RawPlayerStatsHandler {
 			} catch (Exception ex) {
 				if(driver.findElements(By.cssSelector("a[href='#full-time-stats']")).isEmpty()) {
 					driver.quit();
-					throw new Exception("Error Loading page, URL:"+webdriberTimeout, ex);
+					throw new Exception("Error Loading page, URL:"+webdriverTimeout, ex);
 				}
 			}
 						
