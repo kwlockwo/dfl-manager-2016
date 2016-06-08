@@ -13,4 +13,4 @@ export APP_MODULES=$MODLUES_DIR/dflmngr-base-$APP_VERSION.jar:$MODLUES_DIR/dflmn
 
 export CLASSPATH=$APP_MODULES:$LIB_DIR/*:$TOMCAT_LIB/catalina.jar:$TOMCAT_BIN/tomcat-juli.jar
 
-$JAVA_HOME/bin/java -classpath $CLASSPATH net.dflmngr.handlers.PredictionsHandler $@
+$JAVA_HOME/bin/java -classpath $CLASSPATH net.dflmngr.handlers.PredictionHandler $@
