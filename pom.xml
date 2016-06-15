@@ -4,7 +4,7 @@
 
 	<groupId>net.dflmngr</groupId>
 	<artifactId>dflmngr</artifactId>
-	<version>rc6_0.6.7</version>
+	<version>rc5_0.5.11</version>
 	<packaging>pom</packaging>
 
 	<name>dflmngr</name>

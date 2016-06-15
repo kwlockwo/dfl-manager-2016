@@ -49,7 +49,7 @@ public class DflMngrWebservicesImpl implements DflMngrWebservices {
 			
 			loggerUtils.log("info", "Load selections data: teamCode={}; round={}; ins={}; outs={}", teamCode, round, ins, outs);
 			
-			handler.execute(teamCode, round, ins, outs);
+			handler.execute(teamCode, round, ins, outs, false);
 			
 			loggerUtils.log("info", "Load selections request completed");
 		} catch (Exception ex) {

@@ -1,17 +1,17 @@
 package net.dflmngr.handlers;
 
 import java.io.File;
-import java.net.URL;
+//import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+//import org.jsoup.Jsoup;
+//import org.jsoup.nodes.Document;
+//import org.jsoup.nodes.Element;
+//import org.jsoup.select.Elements;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -138,6 +138,7 @@ public class RawPlayerStatsHandler {
 		return success;
 	}
 	
+	/*
 	private List<RawPlayerStats> processFixtures(int round, List<AflFixture> fixturesToProcess, Set<String> teamsToProcess) throws Exception {
 		
 		List<RawPlayerStats> playerStats = new ArrayList<>();
@@ -167,6 +168,7 @@ public class RawPlayerStatsHandler {
 		
 		return playerStats;
 	}
+	*/
 	
 	private List<RawPlayerStats> altProcessFixtures(int round, List<AflFixture> fixturesToProcess, Set<String> teamsToProcess) throws Exception {
 		
@@ -176,7 +178,7 @@ public class RawPlayerStatsHandler {
 		String statsUrl = globalsService.getAflStatsUrl();
 		
 		String browserPath = globalsService.getBrowserPath();
-		int webdriverWait = globalsService.getWebdriverWait();
+		//int webdriverWait = globalsService.getWebdriverWait();
 		int webdriverTimeout = globalsService.getWebdriverTimeout();
 		
 		for(AflFixture fixture : fixturesToProcess) {
@@ -221,6 +223,7 @@ public class RawPlayerStatsHandler {
 		return playerStats;
 	}
 	
+	/*
 	private List<RawPlayerStats> getStats(int round, String aflTeam, String homeORaway, Document doc) throws Exception {
 		
 		Element teamStatsTable;
@@ -265,6 +268,7 @@ public class RawPlayerStatsHandler {
 		
 		return teamStats;
 	}
+	*/
 	
 	private List<RawPlayerStats> altGetStats(int round, String aflTeam, String homeORaway, WebDriver driver) throws Exception {
 		

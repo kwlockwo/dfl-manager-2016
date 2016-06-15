@@ -5,6 +5,8 @@ import java.util.Map;
 
 public class SelectedTeamValidation {
 	
+	public boolean earlyGames;
+	public boolean playedSelections;
 	public boolean selectionFileMissing;
 	public boolean lockedOut;
 	public boolean roundCompleted;
@@ -29,6 +31,8 @@ public class SelectedTeamValidation {
 	private Map<String, List<Integer>> insAndOuts;
 	
 	public SelectedTeamValidation() {
+		earlyGames = false;
+		playedSelections = false;
 		selectionFileMissing = true;
 		lockedOut = true;
 		roundCompleted = true;
@@ -50,8 +54,14 @@ public class SelectedTeamValidation {
 		
 		boolean valid = false;
 		
-		if(!selectionFileMissing && ffCheckOk && fwdCheckOk && rckCheckOk && midCheckOk && fbCheckOk && defCheckOk && benchCheckOk && teamPlayerCheckOk && !unknownError && !lockedOut && !roundCompleted) {
-			valid = true;
+		if(earlyGames) {
+			if(!playedSelections) {
+				valid = true;
+			}
+		} else {
+			if(!selectionFileMissing && ffCheckOk && fwdCheckOk && rckCheckOk && midCheckOk && fbCheckOk && defCheckOk && benchCheckOk && teamPlayerCheckOk && !unknownError && !lockedOut && !roundCompleted) {
+				valid = true;
+			}
 		}
 		
 		return valid;

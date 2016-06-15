@@ -216,10 +216,16 @@ public class EmailSelectionsHandler {
 					loggerUtils.log("info", "Message from {} ... FAILURE!", from);
 				} else {
 					if(validationResult.isValid()) {
-						loggerUtils.log("info", "Team selection is VALID.... Saving ins and outs to DB");
 						TeamSelectionLoaderHandler selectionsLoader = new TeamSelectionLoaderHandler();
 						selectionsLoader.configureLogging(mdcKey, loggerName, logfile);
-						selectionsLoader.execute(validationResult.getTeamCode(), validationResult.getRound(), validationResult.getInsAndOuts().get("in"), validationResult.getInsAndOuts().get("out"));
+						
+						if(validationResult.earlyGames) {
+							loggerUtils.log("info", "Early Games any validation error is a warning .... Saving ins and outs to early tables in DB");
+							selectionsLoader.execute(validationResult.getTeamCode(), validationResult.getRound(), validationResult.getInsAndOuts().get("in"), validationResult.getInsAndOuts().get("out"), true);
+						} else {
+							loggerUtils.log("info", "Team selection is VALID.... Saving ins and outs to DB");
+							selectionsLoader.execute(validationResult.getTeamCode(), validationResult.getRound(), validationResult.getInsAndOuts().get("in"), validationResult.getInsAndOuts().get("out"), false);
+						}
 					} else {
 						loggerUtils.log("info", "Team selection is invalid ... No changes made.");
 					}
@@ -360,7 +366,7 @@ public class EmailSelectionsHandler {
 		
 		SelectedTeamValidationHandler validationHandler = new SelectedTeamValidationHandler();
 		validationHandler.configureLogging(mdcKey, loggerName, logfile);
-		SelectedTeamValidation validationResult = validationHandler.execute(round, teamCode, insAndOuts, receivedDate);
+		SelectedTeamValidation validationResult = validationHandler.execute(round, teamCode, insAndOuts, receivedDate, false);
 		
 		return validationResult;
 	}
@@ -429,7 +435,9 @@ public class EmailSelectionsHandler {
 		String messageBody = "Coach,\n\n" +
 							 "Your selections have not been stored in the database .... The reasons for this are:\n";
 		
-		if(validationResult.selectionFileMissing) {
+		if(validationResult.playedSelections) {
+			messageBody = messageBody + "\t- You have selected/dropped a player who has already played and was not included in your previous selections.\n";
+		} else if(validationResult.selectionFileMissing) {
 			messageBody = messageBody + "\t- You sent the email with no selections.txt\n";
 		} else if(validationResult.roundCompleted) {
 			messageBody = messageBody + "\t- The round you have in your selections.txt has past\n";

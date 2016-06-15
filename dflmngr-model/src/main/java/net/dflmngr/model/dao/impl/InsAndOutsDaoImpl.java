@@ -24,4 +24,17 @@ public class InsAndOutsDaoImpl extends GenericDaoImpl<InsAndOuts, InsAndOutsPK>i
 		
 		return entitys;
 	}
+	
+	public List<InsAndOuts> findByRound(int round) {
+		criteriaBuilder = entityManager.getCriteriaBuilder();
+		criteriaQuery = criteriaBuilder.createQuery(entityClass);
+		entity = criteriaQuery.from(entityClass);
+		
+		Predicate roundEquals = criteriaBuilder.equal(entity.get(InsAndOuts_.round), round);
+		
+		criteriaQuery.where(criteriaBuilder.and(roundEquals));
+		List<InsAndOuts> entitys = entityManager.createQuery(criteriaQuery).getResultList();
+		
+		return entitys;
+	}
 }

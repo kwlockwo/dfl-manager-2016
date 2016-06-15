@@ -8,4 +8,5 @@ import net.dflmngr.model.entity.keys.InsAndOutsPK;
 public interface InsAndOutsDao extends GenericDao<InsAndOuts, InsAndOutsPK> {
 
 	public List<InsAndOuts> findByTeamAndRound(int round, String teamCode);
+	public List<InsAndOuts> findByRound(int round);
 }

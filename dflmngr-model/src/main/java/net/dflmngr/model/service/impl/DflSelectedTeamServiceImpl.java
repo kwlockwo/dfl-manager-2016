@@ -31,9 +31,10 @@ public class DflSelectedTeamServiceImpl extends GenericServiceImpl<DflSelectedPl
 	
 	public void replaceAllForRound(int round, List<DflSelectedPlayer> selectedTeam) {
 		
+		List<DflSelectedPlayer> existingTeam = getAllForRound(round);
+		
 		dao.beginTransaction();
 		
-		List<DflSelectedPlayer> existingTeam = getAllForRound(round);
 		for(DflSelectedPlayer stats : existingTeam) {
 			delete(stats);
 		}
@@ -47,9 +48,10 @@ public class DflSelectedTeamServiceImpl extends GenericServiceImpl<DflSelectedPl
 	
 	public void replaceTeamForRound(int round, String teamCode, List<DflSelectedPlayer> selectedTeam) {
 		
+		List<DflSelectedPlayer> existingTeam = getSelectedTeamForRound(round, teamCode);
+		
 		dao.beginTransaction();
 		
-		List<DflSelectedPlayer> existingTeam = getSelectedTeamForRound(round, teamCode);
 		for(DflSelectedPlayer stats : existingTeam) {
 			delete(stats);
 		}

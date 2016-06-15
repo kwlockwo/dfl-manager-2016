@@ -23,7 +23,7 @@ public class InsAndOutsServiceImpl extends GenericServiceImpl<InsAndOuts, InsAnd
 		
 		List<InsAndOuts> existingInsAndOuts = insAndOutsDao.findByTeamAndRound(round, teamCode);
 		
-		dao.beginTransaction();
+		insAndOutsDao.beginTransaction();
 		
 		if(existingInsAndOuts.size() > 0) {
 			for(InsAndOuts delete : existingInsAndOuts) {
@@ -31,13 +31,13 @@ public class InsAndOutsServiceImpl extends GenericServiceImpl<InsAndOuts, InsAnd
 			}
 		}
 		
-		dao.flush();
+		insAndOutsDao.flush();
 		
 		for(InsAndOuts insert : insAndOuts) {
 			insAndOutsDao.persist(insert);
 		}
 		
-		dao.commit();
+		insAndOutsDao.commit();
 	}
 	
 	public List<InsAndOuts> getByTeamAndRound(int round, String teamCode) {
@@ -45,5 +45,19 @@ public class InsAndOutsServiceImpl extends GenericServiceImpl<InsAndOuts, InsAnd
 		List<InsAndOuts> insAndOuts = insAndOutsDao.findByTeamAndRound(round, teamCode);
 		
 		return insAndOuts;
+	}
+	
+	public void removeForRound(int round) {
+		List<InsAndOuts> existingInsAndOuts = insAndOutsDao.findByRound(round);
+		
+		insAndOutsDao.beginTransaction();
+		
+		if(existingInsAndOuts.size() > 0) {
+			for(InsAndOuts delete : existingInsAndOuts) {
+				insAndOutsDao.remove(delete);
+			}
+		}
+		
+		insAndOutsDao.commit();
 	}
 }

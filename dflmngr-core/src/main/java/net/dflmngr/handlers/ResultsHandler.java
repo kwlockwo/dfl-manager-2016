@@ -137,7 +137,6 @@ public class ResultsHandler {
 			if(cli.hasOption("ss")) {
 				skipStats=true;
 			}
-			
 
 			JndiProvider.bind();
 			
